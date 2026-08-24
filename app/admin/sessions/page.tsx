@@ -352,35 +352,37 @@ export default function SessionsAdminPage() {
                 </span>
               </div>
 
-            <div className="space-y-3">
-              {students.map((st) => {
-                const pos = selectedSession.studentProgress[st.id] || 0;
-                const isFinished = pos === slides.length;
+              <div className="space-y-3">
+                {students.map((st) => {
+                  const pos = selectedSession.studentProgress[st.id] || 0;
+                  const isFinished = pos === slides.length;
 
-                return (
-                  <div key={st.id} className="p-3 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2.5">
-                        <img src={st.avatar} alt={st.name} className="w-7 h-7 rounded-lg object-cover" />
-                        <span className="text-xs font-bold text-slate-200 truncate max-w-[120px]">{st.name}</span>
+                  return (
+                    <div key={st.id} className="p-3 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2.5">
+                          <img src={st.avatar} alt={st.name} className="w-7 h-7 rounded-lg object-cover" />
+                          <span className="text-xs font-bold text-slate-200 truncate max-w-[120px]">{st.name}</span>
+                        </div>
+                        <span className={`text-[11px] font-mono font-bold ${isFinished ? 'text-emerald-400' : 'text-brand-400'}`}>
+                          شريحة {pos} / {slides.length}
+                        </span>
                       </div>
-                      <span className={`text-[11px] font-mono font-bold ${isFinished ? 'text-emerald-400' : 'text-brand-400'}`}>
-                        شريحة {pos} / {slides.length}
-                      </span>
-                    </div>
 
-                    <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
-                      <div
-                        className={`h-full transition-all duration-500 rounded-full ${
-                          isFinished ? 'bg-emerald-500' : 'bg-brand-500'
-                        }`}
-                        style={{ width: `${(pos / (slides.length || 1)) * 100}%` }}
-                      />
+                      <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full transition-all duration-500 rounded-full ${
+                            isFinished ? 'bg-emerald-500' : 'bg-brand-500'
+                          }`}
+                          style={{ width: `${(pos / (slides.length || 1)) * 100}%` }}
+                        />
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
+
           </div>
 
         </div>
