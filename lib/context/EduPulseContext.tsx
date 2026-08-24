@@ -1,0 +1,562 @@
+'use client';
+
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { Language, dictionary } from '@/lib/dictionary';
+import {
+  Student,
+  Session,
+  Quiz,
+  Assignment,
+  CurriculumMilestone,
+  SessionFeedback,
+  GradeLog,
+  AssignmentSubmission,
+  QuizSubmission,
+  AttendanceStatus,
+  BanDetails,
+} from '@/types/edupulse';
+import {
+  initialStudents,
+  initialSessions,
+  initialQuizzes,
+  initialAssignments,
+  initialAssignmentSubmissions,
+  initialCurriculum,
+  initialFeedback,
+  initialGradeLogs,
+  initialQuizSubmissions,
+} from '@/lib/seedData';
+
+type Theme = 'light' | 'dark';
+type UserRole = 'admin' | 'student';
+
+interface EduPulseContextType {
+  language: Language;
+  theme: Theme;
+  userRole: UserRole;
+  activeStudentId: string;
+  activeStudent: Student | undefined;
+  dict: typeof dictionary['ar'];
+  
+  students: Student[];
+  sessions: Session[];
+  quizzes: Quiz[];
+  assignments: Assignment[];
+  assignmentSubmissions: AssignmentSubmission[];
+  quizSubmissions: QuizSubmission[];
+  curriculum: CurriculumMilestone[];
+  feedback: SessionFeedback[];
+  gradeLogs: GradeLog[];
+
+  // Toast / notification state
+  toastMessage: string | null;
+  toastType: 'success' | 'error' | 'info';
+  showToast: (msg: string, type?: 'success' | 'error' | 'info') => void;
+
+  // Setters
+  setLanguage: (lang: Language) => void;
+  setTheme: (theme: Theme) => void;
+  setUserRole: (role: UserRole) => void;
+  setActiveStudentId: (id: string) => void;
+
+  // Actions
+  addStudent: (student: Omit<Student, 'id' | 'joinedDate' | 'attendanceRate' | 'totalPoints'>) => void;
+  updateStudent: (student: Student) => void;
+  applyBan: (studentId: string, banDetails: BanDetails) => void;
+  liftBan: (studentId: string) => void;
+  adjustGrade: (studentId: string, amount: number, type: 'bonus' | 'deduction', reason: string, adminName?: string) => void;
+  markAttendance: (sessionId: string, studentId: string, status: AttendanceStatus) => void;
+  updateSlideProgress: (sessionId: string, studentId: string, slideNumber: number) => void;
+  createQuiz: (quiz: Omit<Quiz, 'id'>) => void;
+  toggleQuizStatus: (quizId: string) => void;
+  submitQuiz: (submission: Omit<QuizSubmission, 'id' | 'submittedAt'>) => void;
+  createAssignment: (assignment: Omit<Assignment, 'id' | 'createdAt'>) => void;
+  submitAssignment: (assignmentId: string, studentId: string, content: string) => void;
+  gradeSubmission: (submissionId: string, score: number, feedback: string) => void;
+  updateCurriculumMilestone: (milestone: CurriculumMilestone) => void;
+  addSessionFeedback: (feedback: Omit<SessionFeedback, 'id' | 'submittedAt'>) => void;
+  resetToDefaultData: () => void;
+}
+
+const EduPulseContext = createContext<EduPulseContextType | undefined>(undefined);
+
+const STORAGE_PREFIX = 'edupulse_v1_';
+
+export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // Config state
+  const [language, setLanguageState] = useState<Language>('ar');
+  const [theme, setThemeState] = useState<Theme>('dark');
+  const [userRole, setUserRoleState] = useState<UserRole>('admin');
+  const [activeStudentId, setActiveStudentIdState] = useState<string>('std_2');
+
+  // Data state
+  const [students, setStudents] = useState<Student[]>(initialStudents);
+  const [sessions, setSessions] = useState<Session[]>(initialSessions);
+  const [quizzes, setQuizzes] = useState<Quiz[]>(initialQuizzes);
+  const [assignments, setAssignments] = useState<Assignment[]>(initialAssignments);
+  const [assignmentSubmissions, setAssignmentSubmissions] = useState<AssignmentSubmission[]>(initialAssignmentSubmissions);
+  const [quizSubmissions, setQuizSubmissions] = useState<QuizSubmission[]>(initialQuizSubmissions);
+  const [curriculum, setCurriculum] = useState<CurriculumMilestone[]>(initialCurriculum);
+  const [feedback, setFeedback] = useState<SessionFeedback[]>(initialFeedback);
+  const [gradeLogs, setGradeLogs] = useState<GradeLog[]>(initialGradeLogs);
+
+  // Toast
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [toastType, setToastType] = useState<'success' | 'error' | 'info'>('success');
+
+  const showToast = (msg: string, type: 'success' | 'error' | 'info' = 'success') => {
+    setToastMessage(msg);
+    setToastType(type);
+    setTimeout(() => {
+      setToastMessage(null);
+    }, 4000);
+  };
+
+  // Load from LocalStorage on mount
+  useEffect(() => {
+    try {
+      const savedLang = localStorage.getItem(`${STORAGE_PREFIX}lang`) as Language;
+      if (savedLang) setLanguageState(savedLang);
+
+      const savedTheme = localStorage.getItem(`${STORAGE_PREFIX}theme`) as Theme;
+      if (savedTheme) setThemeState(savedTheme);
+
+      const savedRole = localStorage.getItem(`${STORAGE_PREFIX}role`) as UserRole;
+      if (savedRole) setUserRoleState(savedRole);
+
+      const savedActiveStudent = localStorage.getItem(`${STORAGE_PREFIX}activeStudent`);
+      if (savedActiveStudent) setActiveStudentIdState(savedActiveStudent);
+
+      const savedStudents = localStorage.getItem(`${STORAGE_PREFIX}students`);
+      if (savedStudents) setStudents(JSON.parse(savedStudents));
+
+      const savedSessions = localStorage.getItem(`${STORAGE_PREFIX}sessions`);
+      if (savedSessions) setSessions(JSON.parse(savedSessions));
+
+      const savedQuizzes = localStorage.getItem(`${STORAGE_PREFIX}quizzes`);
+      if (savedQuizzes) setQuizzes(JSON.parse(savedQuizzes));
+
+      const savedAssignments = localStorage.getItem(`${STORAGE_PREFIX}assignments`);
+      if (savedAssignments) setAssignments(JSON.parse(savedAssignments));
+
+      const savedAsgnSubs = localStorage.getItem(`${STORAGE_PREFIX}asgn_subs`);
+      if (savedAsgnSubs) setAssignmentSubmissions(JSON.parse(savedAsgnSubs));
+
+      const savedQuizSubs = localStorage.getItem(`${STORAGE_PREFIX}quiz_subs`);
+      if (savedQuizSubs) setQuizSubmissions(JSON.parse(savedQuizSubs));
+
+      const savedCurriculum = localStorage.getItem(`${STORAGE_PREFIX}curriculum`);
+      if (savedCurriculum) setCurriculum(JSON.parse(savedCurriculum));
+
+      const savedFeedback = localStorage.getItem(`${STORAGE_PREFIX}feedback`);
+      if (savedFeedback) setFeedback(JSON.parse(savedFeedback));
+
+      const savedGradeLogs = localStorage.getItem(`${STORAGE_PREFIX}grade_logs`);
+      if (savedGradeLogs) setGradeLogs(JSON.parse(savedGradeLogs));
+    } catch (e) {
+      console.warn('LocalStorage initial load warning', e);
+    }
+  }, []);
+
+  // HTML Attributes sync (lang, dir, theme class)
+  useEffect(() => {
+    const root = document.documentElement;
+    root.setAttribute('lang', language);
+    root.setAttribute('dir', language === 'ar' ? 'rtl' : 'ltr');
+
+    if (theme === 'dark') {
+      root.classList.add('dark');
+    } else {
+      root.classList.remove('dark');
+    }
+  }, [language, theme]);
+
+  // Sync to LocalStorage helpers
+  const saveState = (key: string, data: any) => {
+    try {
+      localStorage.setItem(`${STORAGE_PREFIX}${key}`, typeof data === 'string' ? data : JSON.stringify(data));
+    } catch (e) {
+      console.error('LocalStorage save error', e);
+    }
+  };
+
+  const setLanguage = (lang: Language) => {
+    setLanguageState(lang);
+    saveState('lang', lang);
+  };
+
+  const setTheme = (th: Theme) => {
+    setThemeState(th);
+    saveState('theme', th);
+  };
+
+  const setUserRole = (role: UserRole) => {
+    setUserRoleState(role);
+    saveState('role', role);
+  };
+
+  const setActiveStudentId = (id: string) => {
+    setActiveStudentIdState(id);
+    saveState('activeStudent', id);
+  };
+
+  // Actions
+  const addStudent = (stData: Omit<Student, 'id' | 'joinedDate' | 'attendanceRate' | 'totalPoints'>) => {
+    const newStudent: Student = {
+      ...stData,
+      id: `std_${Date.now()}`,
+      joinedDate: new Date().toISOString().split('T')[0],
+      attendanceRate: 100,
+      totalPoints: 100,
+    };
+    const updated = [newStudent, ...students];
+    setStudents(updated);
+    saveState('students', updated);
+    showToast(language === 'ar' ? 'تمت إضافة الطالب بنجاح' : 'Student added successfully');
+  };
+
+  const updateStudent = (updatedSt: Student) => {
+    const updated = students.map((s) => (s.id === updatedSt.id ? updatedSt : s));
+    setStudents(updated);
+    saveState('students', updated);
+    showToast(language === 'ar' ? 'تم تحديث بيانات الطالب' : 'Student details updated');
+  };
+
+  const applyBan = (studentId: string, banDetails: BanDetails) => {
+    const updated = students.map((s) => (s.id === studentId ? { ...s, banDetails } : s));
+    setStudents(updated);
+    saveState('students', updated);
+    showToast(
+      language === 'ar'
+        ? `تم تطبيق الحظر على الطالب بنجاح (${banDetails.type === 'perm' ? 'دائم' : 'مؤقت'})`
+        : `Ban applied to student successfully (${banDetails.type})`,
+      'error'
+    );
+  };
+
+  const liftBan = (studentId: string) => {
+    const updated = students.map((s) => {
+      if (s.id === studentId && s.banDetails) {
+        return { ...s, banDetails: { ...s.banDetails, active: false } };
+      }
+      return s;
+    });
+    setStudents(updated);
+    saveState('students', updated);
+    showToast(language === 'ar' ? 'تم إلغاء الحظر وإعادة تفعيل الحساب' : 'Ban revoked and account restored');
+  };
+
+  const adjustGrade = (
+    studentId: string,
+    amount: number,
+    type: 'bonus' | 'deduction',
+    reason: string,
+    adminName = 'الإدارة'
+  ) => {
+    const targetStudent = students.find((s) => s.id === studentId);
+    if (!targetStudent) return;
+
+    const netAmount = type === 'bonus' ? Math.abs(amount) : -Math.abs(amount);
+    const newTotalPoints = Math.max(0, targetStudent.totalPoints + netAmount);
+
+    const updatedStudents = students.map((s) => (s.id === studentId ? { ...s, totalPoints: newTotalPoints } : s));
+    setStudents(updatedStudents);
+    saveState('students', updatedStudents);
+
+    const newLog: GradeLog = {
+      id: `glog_${Date.now()}`,
+      studentId,
+      studentName: targetStudent.name,
+      amount: netAmount,
+      type,
+      reason,
+      adminName,
+      date: new Date().toISOString(),
+    };
+
+    const updatedLogs = [newLog, ...gradeLogs];
+    setGradeLogs(updatedLogs);
+    saveState('grade_logs', updatedLogs);
+
+    showToast(
+      language === 'ar'
+        ? `تم تسجيل ${type === 'bonus' ? 'بونص' : 'خصم'} بقيمة ${Math.abs(amount)} نقطة`
+        : `${type === 'bonus' ? 'Bonus' : 'Deduction'} of ${Math.abs(amount)} points logged`
+    );
+  };
+
+  const markAttendance = (sessionId: string, studentId: string, status: AttendanceStatus) => {
+    const updatedSessions = sessions.map((sess) => {
+      if (sess.id === sessionId) {
+        return {
+          ...sess,
+          attendance: {
+            ...sess.attendance,
+            [studentId]: status,
+          },
+        };
+      }
+      return sess;
+    });
+    setSessions(updatedSessions);
+    saveState('sessions', updatedSessions);
+
+    // Recalculate attendance rate for student
+    recalculateStudentAttendance(studentId, updatedSessions);
+  };
+
+  const recalculateStudentAttendance = (studentId: string, currentSessions: Session[]) => {
+    let totalPresent = 0;
+    let totalCounted = 0;
+
+    currentSessions.forEach((s) => {
+      const st = s.attendance[studentId];
+      if (st) {
+        totalCounted++;
+        if (st === 'present' || st === 'late') {
+          totalPresent++;
+        }
+      }
+    });
+
+    if (totalCounted > 0) {
+      const newRate = Math.round((totalPresent / totalCounted) * 100);
+      setStudents((prev) => {
+        const next = prev.map((s) => (s.id === studentId ? { ...s, attendanceRate: newRate } : s));
+        saveState('students', next);
+        return next;
+      });
+    }
+  };
+
+  const updateSlideProgress = (sessionId: string, studentId: string, slideNumber: number) => {
+    const updatedSessions = sessions.map((sess) => {
+      if (sess.id === sessionId) {
+        return {
+          ...sess,
+          studentProgress: {
+            ...sess.studentProgress,
+            [studentId]: slideNumber,
+          },
+        };
+      }
+      return sess;
+    });
+    setSessions(updatedSessions);
+    saveState('sessions', updatedSessions);
+  };
+
+  const createQuiz = (quizData: Omit<Quiz, 'id'>) => {
+    const newQuiz: Quiz = {
+      ...quizData,
+      id: `quiz_${Date.now()}`,
+    };
+    const updated = [newQuiz, ...quizzes];
+    setQuizzes(updated);
+    saveState('quizzes', updated);
+    showToast(language === 'ar' ? 'تمت إضافة الاختبار الإلكتروني' : 'Quiz created successfully');
+  };
+
+  const toggleQuizStatus = (quizId: string) => {
+    const updated = quizzes.map((q) => (q.id === quizId ? { ...q, isOpen: !q.isOpen } : q));
+    setQuizzes(updated);
+    saveState('quizzes', updated);
+    const target = updated.find((q) => q.id === quizId);
+    showToast(
+      language === 'ar'
+        ? `حالة الاختبار الآن: ${target?.isOpen ? 'مفتوح' : 'مغلق'}`
+        : `Quiz status: ${target?.isOpen ? 'Open' : 'Closed'}`
+    );
+  };
+
+  const submitQuiz = (subData: Omit<QuizSubmission, 'id' | 'submittedAt'>) => {
+    const newSub: QuizSubmission = {
+      ...subData,
+      id: `qsub_${Date.now()}`,
+      submittedAt: new Date().toISOString(),
+    };
+    const updated = [newSub, ...quizSubmissions];
+    setQuizSubmissions(updated);
+    saveState('quiz_subs', updated);
+
+    // Reward points for total score
+    adjustGrade(
+      subData.studentId,
+      subData.totalScore,
+      'bonus',
+      `درجة الاختبار الإلكتروني: ${subData.totalScore}/${subData.maxScore}`,
+      'النظام الآلي'
+    );
+
+    showToast(
+      language === 'ar'
+        ? `تم تسليم الاختبار بنجاح! درجتك: ${subData.totalScore}/${subData.maxScore}`
+        : `Quiz submitted! Your score: ${subData.totalScore}/${subData.maxScore}`
+    );
+  };
+
+  const createAssignment = (asgnData: Omit<Assignment, 'id' | 'createdAt'>) => {
+    const newAsgn: Assignment = {
+      ...asgnData,
+      id: `asg_${Date.now()}`,
+      createdAt: new Date().toISOString().split('T')[0],
+    };
+    const updated = [newAsgn, ...assignments];
+    setAssignments(updated);
+    saveState('assignments', updated);
+    showToast(language === 'ar' ? 'تم إسناد الواجب بنجاح' : 'Assignment created');
+  };
+
+  const submitAssignment = (assignmentId: string, studentId: string, content: string) => {
+    const existingIndex = assignmentSubmissions.findIndex(
+      (s) => s.assignmentId === assignmentId && s.studentId === studentId
+    );
+
+    let updated: AssignmentSubmission[];
+    if (existingIndex >= 0) {
+      updated = assignmentSubmissions.map((s, idx) =>
+        idx === existingIndex ? { ...s, content, submittedAt: new Date().toISOString(), status: 'submitted' as const } : s
+      );
+    } else {
+      const newSub: AssignmentSubmission = {
+        id: `asgn_sub_${Date.now()}`,
+        assignmentId,
+        studentId,
+        content,
+        submittedAt: new Date().toISOString(),
+        status: 'submitted',
+      };
+      updated = [newSub, ...assignmentSubmissions];
+    }
+
+    setAssignmentSubmissions(updated);
+    saveState('asgn_subs', updated);
+    showToast(language === 'ar' ? 'تم تسليم حل الواجب بنجاح' : 'Assignment solution submitted');
+  };
+
+  const gradeSubmission = (submissionId: string, score: number, feedback: string) => {
+    const targetSub = assignmentSubmissions.find((s) => s.id === submissionId);
+    if (!targetSub) return;
+
+    const updated = assignmentSubmissions.map((s) =>
+      s.id === submissionId
+        ? {
+            ...s,
+            score,
+            teacherFeedback: feedback,
+            status: 'graded' as const,
+            gradedAt: new Date().toISOString(),
+          }
+        : s
+    );
+
+    setAssignmentSubmissions(updated);
+    saveState('asgn_subs', updated);
+
+    // Grant bonus points to student
+    adjustGrade(targetSub.studentId, score, 'bonus', `تقييم الواجب الدراسي`, 'المعلم');
+
+    showToast(language === 'ar' ? 'تم حفظ تصحيح الواجب والملاحظات' : 'Assignment graded');
+  };
+
+  const updateCurriculumMilestone = (milestone: CurriculumMilestone) => {
+    const updated = curriculum.map((c) => (c.id === milestone.id ? milestone : c));
+    setCurriculum(updated);
+    saveState('curriculum', updated);
+    showToast(language === 'ar' ? 'تم تحديث وحدة المنهج الدراسي' : 'Curriculum updated');
+  };
+
+  const addSessionFeedback = (fbData: Omit<SessionFeedback, 'id' | 'submittedAt'>) => {
+    const newFb: SessionFeedback = {
+      ...fbData,
+      id: `fb_${Date.now()}`,
+      submittedAt: new Date().toISOString(),
+    };
+    const updated = [newFb, ...feedback];
+    setFeedback(updated);
+    saveState('feedback', updated);
+    showToast(language === 'ar' ? 'شكراً لك! تم تسليم تقييمك بنجاح' : 'Thank you! Review submitted');
+  };
+
+  const resetToDefaultData = () => {
+    setStudents(initialStudents);
+    setSessions(initialSessions);
+    setQuizzes(initialQuizzes);
+    setAssignments(initialAssignments);
+    setAssignmentSubmissions(initialAssignmentSubmissions);
+    setQuizSubmissions(initialQuizSubmissions);
+    setCurriculum(initialCurriculum);
+    setFeedback(initialFeedback);
+    setGradeLogs(initialGradeLogs);
+
+    localStorage.removeItem(`${STORAGE_PREFIX}students`);
+    localStorage.removeItem(`${STORAGE_PREFIX}sessions`);
+    localStorage.removeItem(`${STORAGE_PREFIX}quizzes`);
+    localStorage.removeItem(`${STORAGE_PREFIX}assignments`);
+    localStorage.removeItem(`${STORAGE_PREFIX}asgn_subs`);
+    localStorage.removeItem(`${STORAGE_PREFIX}quiz_subs`);
+    localStorage.removeItem(`${STORAGE_PREFIX}curriculum`);
+    localStorage.removeItem(`${STORAGE_PREFIX}feedback`);
+    localStorage.removeItem(`${STORAGE_PREFIX}grade_logs`);
+
+    showToast(language === 'ar' ? 'تمت إعادة ضبط البيانات الافتراضية' : 'Reset to default seed data');
+  };
+
+  const activeStudent = students.find((s) => s.id === activeStudentId);
+  const dict = dictionary[language];
+
+  return (
+    <EduPulseContext.Provider
+      value={{
+        language,
+        theme,
+        userRole,
+        activeStudentId,
+        activeStudent,
+        dict,
+        students,
+        sessions,
+        quizzes,
+        assignments,
+        assignmentSubmissions,
+        quizSubmissions,
+        curriculum,
+        feedback,
+        gradeLogs,
+        toastMessage,
+        toastType,
+        showToast,
+        setLanguage,
+        setTheme,
+        setUserRole,
+        setActiveStudentId,
+        addStudent,
+        updateStudent,
+        applyBan,
+        liftBan,
+        adjustGrade,
+        markAttendance,
+        updateSlideProgress,
+        createQuiz,
+        toggleQuizStatus,
+        submitQuiz,
+        createAssignment,
+        submitAssignment,
+        gradeSubmission,
+        updateCurriculumMilestone,
+        addSessionFeedback,
+        resetToDefaultData,
+      }}
+    >
+      {children}
+    </EduPulseContext.Provider>
+  );
+};
+
+export const useEduPulse = () => {
+  const context = useContext(EduPulseContext);
+  if (!context) {
+    throw new Error('useEduPulse must be used within an EduPulseProvider');
+  }
+  return context;
+};
