@@ -95,13 +95,7 @@ export const Header: React.FC<{ onToggleSidebar?: () => void }> = ({ onToggleSid
         {/* Controls Right */}
         <div className="flex items-center gap-2.5">
 
-          {/* Active Student Badge */}
-          {userRole === 'student' && activeStudent && !pathname.startsWith('/admin') && (
-            <div className="flex items-center gap-2 bg-emerald-950/40 border border-emerald-500/30 rounded-2xl px-3 py-1.5 text-xs font-bold text-emerald-300">
-              <UserCheck className="w-4 h-4 text-emerald-400 shrink-0" />
-              <span className="max-w-[120px] sm:max-w-[160px] truncate">{activeStudent.name}</span>
-            </div>
-          )}
+
 
           {/* Login Link */}
           <Link
