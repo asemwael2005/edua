@@ -7,11 +7,12 @@ import {
   CalendarCheck,
   Award,
   BookOpenCheck,
+  TrendingUp,
   UserPlus,
   PlusCircle,
   FilePlus,
   ArrowUpRight,
-  TrendingUp,
+  Trophy,
   Star,
   ShieldCheck,
   Sparkles,
@@ -35,14 +36,14 @@ export default function AdminDashboard() {
   } = useEduPulse();
 
   const activeStudentsCount = students.filter((s) => !s.banDetails?.active).length;
-  
-  const avgAttendance = Math.round(
-    students.reduce((acc, s) => acc + s.attendanceRate, 0) / (students.length || 1)
-  );
+
+  const avgAttendance = students.length
+    ? Math.round(students.reduce((acc, s) => acc + s.attendanceRate, 0) / students.length)
+    : 0;
 
   const avgQuizScore = quizSubmissions.length
     ? Math.round(quizSubmissions.reduce((acc, q) => acc + q.percentage, 0) / quizSubmissions.length)
-    : 85;
+    : 0;
 
   const pendingAssignmentsCount = assignmentSubmissions.filter((s) => s.status === 'submitted').length;
 
@@ -188,36 +189,55 @@ export default function AdminDashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-base font-bold text-slate-900 dark:text-white">{dict.metrics.attendanceTrend}</h3>
-                <p className="text-xs text-slate-400">مقارنة نسب الحضور والتفاعل عبر المحاضرات الأخيرة</p>
+                <p className="text-xs text-slate-400">مقارنة نسب الحضور والتفاعل عبر المحاضرات الفعلية المضافة</p>
               </div>
               <span className="px-2.5 py-1 rounded-lg bg-slate-800 text-brand-400 text-xs font-mono font-bold">
-                أحدث 4 أسابيع
+                الجلسات المسجلة ({sessions.length})
               </span>
             </div>
 
-            {/* Custom SVG / Bar Chart Representation */}
+            {/* Dynamic Sessions Attendance Chart / Empty State */}
             <div className="space-y-4 pt-2">
-              {[
-                { label: 'المحاضرة 5: التفاضل والتكامل', percent: 96, color: 'from-brand-500 to-indigo-600' },
-                { label: 'المحاضرة 4: الفيزياء الحديثة', percent: 88, color: 'from-accent-purple to-purple-700' },
-                { label: 'المحاضرة 3: الميكانيكا المتقدمة', percent: 92, color: 'from-emerald-500 to-teal-600' },
-                { label: 'المحاضرة 2: الجبر والهندسة الفراغية', percent: 84, color: 'from-amber-500 to-orange-600' },
-              ].map((item, index) => (
-                <div key={index} className="space-y-1.5">
-                  <div className="flex justify-between text-xs font-semibold text-slate-300">
-                    <span>{item.label}</span>
-                    <span className="font-mono">{item.percent}%</span>
-                  </div>
-                  <div className="h-3 w-full rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden p-0.5">
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: `${item.percent}%` }}
-                      transition={{ duration: 1, delay: index * 0.1 }}
-                      className={`h-full rounded-full bg-gradient-to-r ${item.color}`}
-                    />
-                  </div>
+              {sessions.length === 0 || students.length === 0 ? (
+                <div className="py-8 text-center text-slate-400 space-y-2 border border-dashed border-slate-800 rounded-2xl bg-slate-950/40">
+                  <CalendarCheck className="w-8 h-8 text-slate-600 mx-auto" />
+                  <p className="text-xs font-bold text-slate-300">لا توجد إحصائيات حضور حية بعد</p>
+                  <p className="text-[11px] text-slate-500">قم بإضافة المحاضرات والطلاب لبدء احتساب مؤشر الحضور تلقائياً.</p>
                 </div>
-              ))}
+              ) : (
+                sessions.slice(0, 5).map((sess, index) => {
+                  const presentCount = Object.values(sess.attendance).filter(
+                    (st) => st === 'present' || st === 'late'
+                  ).length;
+                  const totalSt = students.length || 1;
+                  const percent = Math.round((presentCount / totalSt) * 100);
+
+                  const colors = [
+                    'from-brand-500 to-indigo-600',
+                    'from-accent-purple to-purple-700',
+                    'from-emerald-500 to-teal-600',
+                    'from-amber-500 to-orange-600',
+                  ];
+                  const color = colors[index % colors.length];
+
+                  return (
+                    <div key={sess.id} className="space-y-1.5">
+                      <div className="flex justify-between text-xs font-semibold text-slate-300">
+                        <span>{sess.title}</span>
+                        <span className="font-mono">{percent}%</span>
+                      </div>
+                      <div className="h-3 w-full rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden p-0.5">
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: `${percent}%` }}
+                          transition={{ duration: 1, delay: index * 0.1 }}
+                          className={`h-full rounded-full bg-gradient-to-r ${color}`}
+                        />
+                      </div>
+                    </div>
+                  );
+                })
+              )}
             </div>
           </div>
 
@@ -262,77 +282,105 @@ export default function AdminDashboard() {
                 <div className="w-10 h-10 mx-auto rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center group-hover:scale-110 transition">
                   <BookOpenCheck className="w-5 h-5" />
                 </div>
-                <span className="block text-xs font-bold text-slate-200">{dict.metrics.createAssignment}</span>
+                <span className="block text-xs font-bold text-slate-200">{dict.metrics.gradeAssignments}</span>
               </Link>
             </div>
           </div>
 
         </div>
 
-        {/* Right Column: Top Performers & Recent Feedback */}
+        {/* Right Column: Top Performers & Feedback Feed */}
         <div className="space-y-6">
           
-          {/* Top Performers Card */}
+          {/* Top Students Roster / Empty State */}
           <div className="p-6 rounded-3xl glass-panel border space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-base font-bold text-slate-900 dark:text-white">{dict.metrics.topPerformers}</h3>
-              <Link href="/student/scorecard" className="text-xs text-brand-400 font-semibold hover:underline flex items-center gap-1">
-                عرض الكشف <ChevronLeft className={`w-3.5 h-3.5 ${language === 'ar' ? '' : 'rotate-180'}`} />
+              <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <Trophy className="w-4 h-4 text-amber-400" />
+                <span>{dict.metrics.topPerformers}</span>
+              </h3>
+              <Link href="/admin/students" className="text-xs font-bold text-brand-400 hover:underline flex items-center gap-1">
+                <span>عرض الكشف</span>
+                <ChevronLeft className="w-3.5 h-3.5 rtl:rotate-0 ltr:rotate-180" />
               </Link>
             </div>
 
             <div className="space-y-3">
-              {topPerformers.map((student, idx) => (
-                <div
-                  key={student.id}
-                  className="p-3 rounded-2xl bg-slate-900/50 border border-slate-800 flex items-center justify-between gap-3"
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="w-6 h-6 rounded-lg bg-brand-500/20 text-brand-400 text-xs font-black flex items-center justify-center font-mono">
-                      #{idx + 1}
-                    </span>
-                    <img src={student.avatar} alt={student.name} className="w-9 h-9 rounded-xl object-cover" />
-                    <div>
-                      <h4 className="text-xs font-bold text-white truncate max-w-[130px]">{student.name}</h4>
-                      <span className="text-[10px] text-slate-400">{student.grade}</span>
+              {topPerformers.length === 0 ? (
+                <div className="py-8 text-center text-slate-400 space-y-2 border border-dashed border-slate-800 rounded-2xl bg-slate-950/40">
+                  <Trophy className="w-8 h-8 text-slate-600 mx-auto" />
+                  <p className="text-xs font-bold text-slate-300">لا يوجد طلاب مسجلين بعد</p>
+                  <p className="text-[11px] text-slate-500">قم بإضافة الطلاب من قسم "إدارة الطلاب" لرفع كشف المتفوقين تلقائياً.</p>
+                </div>
+              ) : (
+                topPerformers.map((student, rank) => (
+                  <div
+                    key={student.id}
+                    className="p-3 rounded-2xl bg-slate-900/60 border border-slate-800/80 flex items-center justify-between gap-3 hover:border-brand-500/30 transition"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="relative">
+                        <img src={student.avatar} alt={student.name} className="w-10 h-10 rounded-xl object-cover" />
+                        <span
+                          className={`absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center text-white ${
+                            rank === 0
+                              ? 'bg-amber-500 shadow-md shadow-amber-500/40'
+                              : rank === 1
+                              ? 'bg-slate-400'
+                              : 'bg-amber-700'
+                          }`}
+                        >
+                          {rank + 1}
+                        </span>
+                      </div>
+                      <div className="overflow-hidden">
+                        <h4 className="text-xs font-bold text-white truncate max-w-[120px]">{student.name}</h4>
+                        <span className="text-[10px] text-slate-400 font-mono">حضور: {student.attendanceRate}%</span>
+                      </div>
+                    </div>
+
+                    <div className="text-right rtl:text-left ltr:text-right">
+                      <span className="text-xs font-extrabold font-mono text-brand-400 block">{student.totalPoints}</span>
+                      <span className="text-[9px] text-slate-500">نقطة تميز</span>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <span className="block text-sm font-black text-amber-400 font-mono">{student.totalPoints} ن</span>
-                    <span className="text-[10px] text-emerald-400 font-bold">{student.attendanceRate}% حضور</span>
-                  </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
 
-          {/* Student Feedback Reviews Widget */}
+          {/* Latest Student Feedback Feed / Empty State */}
           <div className="p-6 rounded-3xl glass-panel border space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-base font-bold text-slate-900 dark:text-white">{dict.metrics.recentFeedback}</h3>
-              <Link href="/admin/feedback" className="text-xs text-brand-400 font-semibold hover:underline">
+              <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <Star className="w-4 h-4 text-amber-400" />
+                <span>أحدث آراء وتقييمات الطلاب</span>
+              </h3>
+              <Link href="/admin/feedback" className="text-xs font-bold text-brand-400 hover:underline">
                 الجميع ({feedback.length})
               </Link>
             </div>
 
             <div className="space-y-3">
-              {feedback.slice(0, 3).map((fb) => (
-                <div key={fb.id} className="p-3.5 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-slate-200">{fb.studentName}</span>
-                    <div className="flex items-center gap-1">
-                      {[...Array(5)].map((_, i) => (
-                        <Star
-                          key={i}
-                          className={`w-3 h-3 ${i < fb.rating ? 'fill-amber-400 text-amber-400' : 'text-slate-700'}`}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                  <p className="text-xs text-slate-300 italic">"{fb.comment}"</p>
-                  <span className="block text-[10px] text-slate-500 font-medium truncate">{fb.sessionTitle}</span>
+              {feedback.length === 0 ? (
+                <div className="py-6 text-center text-slate-400 text-xs border border-dashed border-slate-800 rounded-2xl bg-slate-950/40">
+                  لا توجد تقييمات مسجلة من الطلاب حتى الآن.
                 </div>
-              ))}
+              ) : (
+                feedback.slice(0, 3).map((fb) => (
+                  <div key={fb.id} className="p-3.5 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-bold text-slate-200">{fb.studentName}</span>
+                      <div className="flex items-center gap-0.5 text-amber-400">
+                        {Array.from({ length: fb.rating }).map((_, i) => (
+                          <Star key={i} className="w-3 h-3 fill-amber-400" />
+                        ))}
+                      </div>
+                    </div>
+                    <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed">{fb.comment}</p>
+                  </div>
+                ))
+              )}
             </div>
           </div>
 
