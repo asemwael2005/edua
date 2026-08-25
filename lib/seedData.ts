@@ -8,7 +8,35 @@ import {
   GradeLog,
   AssignmentSubmission,
   QuizSubmission,
+  RecordedVideo,
 } from '@/types/edupulse';
+
+export const initialVideos: RecordedVideo[] = [
+  {
+    id: 'vid_1',
+    title: 'تسجيل المحاضرة 5: التفاضل الضمني والمعدلات الزمنية',
+    subject: 'الرياضيات التطبيقية',
+    grade: 'الصف الثالث الثانوي',
+    videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&q=80&w=600',
+    duration: '01:45:00',
+    description: 'تسجيل مسجل بالكامل لشرح درس المعدلات الزمنية مع حل 15 مسألة امتحان من الأعوام السابقة.',
+    createdAt: '2026-08-25',
+    viewsCount: 142,
+  },
+  {
+    id: 'vid_2',
+    title: 'تسجيل المحاضرة 4: الفيزياء الحديثة والظاهرة الكهرودوئية',
+    subject: 'الفيزياء',
+    grade: 'الصف الثالث الثانوي',
+    videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1507668077129-56e32842fceb?auto=format&fit=crop&q=80&w=600',
+    duration: '02:10:00',
+    description: 'شرح معادلة أينشتاين الكهروضوئية وتطبيقات ثابت بلانك.',
+    createdAt: '2026-08-23',
+    viewsCount: 98,
+  }
+];
 
 export const initialStudents: Student[] = [
   {

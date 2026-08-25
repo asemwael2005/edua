@@ -59,6 +59,22 @@ export interface Session {
   slides: Slide[];
   attendance: Record<string, AttendanceStatus>; // studentId -> status
   studentProgress: Record<string, number>;      // studentId -> slideNumber
+  isLive?: boolean;
+  liveMeetingUrl?: string; // Zoom / Meet / Jitsi link
+  videoUrl?: string;       // Uploaded video MP4 or YouTube embed
+}
+
+export interface RecordedVideo {
+  id: string;
+  title: string;
+  subject: string;
+  grade: string;
+  videoUrl: string;
+  thumbnailUrl?: string;
+  duration: string;
+  description: string;
+  createdAt: string;
+  viewsCount: number;
 }
 
 export type QuestionType = 'mcq' | 'true_false';

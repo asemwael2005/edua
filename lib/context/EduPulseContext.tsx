@@ -25,6 +25,7 @@ import {
   initialFeedback,
   initialGradeLogs,
   initialQuizSubmissions,
+  initialVideos,
 } from '@/lib/seedData';
 
 type Theme = 'light' | 'dark';
@@ -54,6 +55,7 @@ interface EduPulseContextType {
   curriculum: CurriculumMilestone[];
   feedback: SessionFeedback[];
   gradeLogs: GradeLog[];
+  videos: RecordedVideo[];
 
   // Toast / notification state
   toastMessage: string | null;
@@ -83,6 +85,8 @@ interface EduPulseContextType {
   gradeSubmission: (submissionId: string, score: number, feedback: string) => void;
   updateCurriculumMilestone: (milestone: CurriculumMilestone) => void;
   addSessionFeedback: (feedback: Omit<SessionFeedback, 'id' | 'submittedAt'>) => void;
+  addVideo: (videoData: Omit<RecordedVideo, 'id' | 'createdAt' | 'viewsCount'>) => void;
+  updateLiveStream: (sessionId: string, isLive: boolean, meetingUrl: string) => void;
   resetToDefaultData: () => void;
   clearAllData: () => void;
 }
@@ -528,6 +532,36 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     showToast(language === 'ar' ? 'تم تحديث وحدة المنهج الدراسي' : 'Curriculum updated');
   };
 
+  const [videos, setVideos] = useState<RecordedVideo[]>(initialVideos);
+
+  const addVideo = (vData: Omit<RecordedVideo, 'id' | 'createdAt' | 'viewsCount'>) => {
+    const newVideo: RecordedVideo = {
+      ...vData,
+      id: `vid_${Date.now()}`,
+      createdAt: new Date().toISOString().split('T')[0],
+      viewsCount: 1,
+    };
+    const updated = [newVideo, ...videos];
+    setVideos(updated);
+    saveState('videos', updated);
+    showToast(language === 'ar' ? 'تم رفع ونشر تسجيل المحاضرة بنجاح' : 'Lecture recording added');
+  };
+
+  const updateLiveStream = (sessionId: string, isLive: boolean, meetingUrl: string) => {
+    const updated = sessions.map((s) => (s.id === sessionId ? { ...s, isLive, liveMeetingUrl: meetingUrl } : s));
+    setSessions(updated);
+    saveState('sessions', updated);
+    showToast(
+      language === 'ar'
+        ? isLive
+          ? 'تم بدء البث المباشر للمحاضرة الآن 🔴'
+          : 'تم إنهاء البث المباشر للمحاضرة'
+        : isLive
+        ? 'Live stream started 🔴'
+        : 'Live stream ended'
+    );
+  };
+
   const addSessionFeedback = (fbData: Omit<SessionFeedback, 'id' | 'submittedAt'>) => {
     const newFb: SessionFeedback = {
       ...fbData,
@@ -614,6 +648,7 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         curriculum,
         feedback,
         gradeLogs,
+        videos,
         toastMessage,
         toastType,
         showToast,
@@ -637,6 +672,8 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         gradeSubmission,
         updateCurriculumMilestone,
         addSessionFeedback,
+        addVideo,
+        updateLiveStream,
         resetToDefaultData,
         clearAllData,
       }}
