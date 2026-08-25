@@ -4,8 +4,9 @@ import React, { useState } from 'react';
 import { useEduPulse } from '@/lib/context/EduPulseContext';
 import { BanShield } from '@/components/BanShield';
 import { RecordedVideo } from '@/types/edupulse';
+import { isMatchingGrade } from '@/lib/gradeUtils';
 import { normalizeAndValidateUrl } from '@/app/admin/videos/page';
-import { Video, Radio, Play, Clock, Eye, Sparkles, ExternalLink, X } from 'lucide-react';
+import { Video, Radio, Play, Clock, Eye, Sparkles, ExternalLink, X, Film } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function StudentVideosPage() {
@@ -14,7 +15,12 @@ export default function StudentVideosPage() {
 
   if (!activeStudent) return null;
 
-  const activeLiveSession = sessions.find((s) => s.isLive);
+  // Filter Videos and Live Broadcasts by student's grade level
+  const filteredVideos = videos.filter((v) => isMatchingGrade(v.grade, activeStudent.grade));
+  const activeLiveSession = sessions.find(
+    (s) => s.isLive && isMatchingGrade(s.grade, activeStudent.grade)
+  );
+
   const liveUrl = activeLiveSession?.liveMeetingUrl ? normalizeAndValidateUrl(activeLiveSession.liveMeetingUrl) : null;
 
   const handleJoinLive = (e: React.MouseEvent) => {
@@ -31,12 +37,20 @@ export default function StudentVideosPage() {
       <div className="space-y-8 pb-12">
         
         {/* Header */}
-        <div>
-          <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-3">
-            <Video className="w-7 h-7 text-rose-500" />
-            <span>تسجيلات المحاضرات والغرفة الحية</span>
-          </h1>
-          <p className="text-xs text-slate-400 mt-1">مشاهدة إعادة المحاضرات والانضمام للبث المباشر أونلاين</p>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+          <div>
+            <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-3">
+              <Video className="w-7 h-7 text-rose-500" />
+              <span>تسجيلات المحاضرات والغرفة الحية</span>
+            </h1>
+            <p className="text-xs text-slate-400 mt-1">
+              تعرض الفيديوهات والبث المباشر المخصص لصفك الدراسي ({activeStudent.grade})
+            </p>
+          </div>
+
+          <span className="px-3 py-1.5 rounded-xl bg-rose-500/10 text-rose-400 border border-rose-500/20 text-xs font-bold font-mono self-start sm:self-auto">
+            {activeStudent.grade}
+          </span>
         </div>
 
         {/* 🔴 LIVE BROADCAST ALERT FOR STUDENTS */}
@@ -56,7 +70,7 @@ export default function StudentVideosPage() {
                     مباشر الآن 🔴 LIVE
                   </span>
                   <h3 className="text-lg font-extrabold text-white mt-1">{activeLiveSession.title}</h3>
-                  <p className="text-xs text-slate-300">بدأ المعلم البث المباشر للمحاضرة الآن. اضغط للانضمام مباشرة.</p>
+                  <p className="text-xs text-slate-300">بدأ المعلم البث المباشر المخصص لصفك الدراسي الآن. اضغط للانضمام مباشرة.</p>
                 </div>
               </div>
 
@@ -76,56 +90,70 @@ export default function StudentVideosPage() {
 
         {/* 📹 RECORDED LECTURES LIBRARY */}
         <div className="space-y-4">
-          <h3 className="text-base font-extrabold text-white">مكتبة فيديوهات وإعادة المحاضرات</h3>
+          <h3 className="text-base font-extrabold text-white flex items-center gap-2">
+            <Film className="w-5 h-5 text-rose-400" />
+            <span>مكتبة فيديوهات وصممت لـ ({activeStudent.grade})</span>
+          </h3>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {videos.map((vid) => (
-              <div
-                key={vid.id}
-                className="p-4 rounded-3xl glass-panel border space-y-3 hover:border-rose-500/40 transition duration-300 flex flex-col justify-between"
-              >
-                <div className="space-y-3">
-                  <div className="relative aspect-video rounded-2xl overflow-hidden bg-slate-950 group">
-                    <img src={vid.thumbnailUrl} alt={vid.title} className="w-full h-full object-cover group-hover:scale-105 transition duration-300" />
-                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-90 group-hover:opacity-100 transition">
-                      <button
-                        type="button"
-                        onClick={() => setSelectedVideo(vid)}
-                        className="w-12 h-12 rounded-2xl bg-rose-600/90 text-white flex items-center justify-center shadow-xl glow-rose transform group-hover:scale-110 transition"
-                      >
-                        <Play className="w-5 h-5 ltr:translate-x-0.5 rtl:-translate-x-0.5" />
-                      </button>
+          {filteredVideos.length === 0 ? (
+            <div className="p-12 text-center rounded-3xl glass-panel border space-y-2">
+              <Film className="w-10 h-10 text-slate-600 mx-auto" />
+              <h4 className="text-sm font-bold text-slate-300">لا توجد تسجيلات مرئية متاحة لصفك الدراسي حالياً</h4>
+              <p className="text-xs text-slate-500">سيتم رفع تسجيلات محاضرات {activeStudent.grade} فور انتهاء الحصص</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredVideos.map((vid) => (
+                <div
+                  key={vid.id}
+                  className="p-4 rounded-3xl glass-panel border space-y-3 hover:border-rose-500/40 transition duration-300 flex flex-col justify-between"
+                >
+                  <div className="space-y-3">
+                    <div className="relative aspect-video rounded-2xl overflow-hidden bg-slate-950 group">
+                      <img src={vid.thumbnailUrl} alt={vid.title} className="w-full h-full object-cover group-hover:scale-105 transition duration-300" />
+                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-90 group-hover:opacity-100 transition">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedVideo(vid)}
+                          className="w-12 h-12 rounded-2xl bg-rose-600/90 text-white flex items-center justify-center shadow-xl glow-rose transform group-hover:scale-110 transition"
+                        >
+                          <Play className="w-5 h-5 ltr:translate-x-0.5 rtl:-translate-x-0.5" />
+                        </button>
+                      </div>
+                      <span className="absolute bottom-2 ltr:right-2 rtl:left-2 px-2 py-0.5 rounded-md bg-black/80 text-white text-[10px] font-mono font-bold">
+                        {vid.duration}
+                      </span>
                     </div>
-                    <span className="absolute bottom-2 ltr:right-2 rtl:left-2 px-2 py-0.5 rounded-md bg-black/80 text-white text-[10px] font-mono font-bold">
-                      {vid.duration}
+
+                    <div>
+                      <div className="flex items-center justify-between text-[10px] font-bold text-rose-400 font-mono">
+                        <span>{vid.subject}</span>
+                        <span className="text-slate-400 font-sans">{vid.grade}</span>
+                      </div>
+                      <h4 className="text-sm font-extrabold text-white leading-snug line-clamp-2 mt-0.5">{vid.title}</h4>
+                    </div>
+
+                    <p className="text-xs text-slate-300 line-clamp-2">{vid.description}</p>
+                  </div>
+
+                  <div className="pt-3 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
+                    <span className="flex items-center gap-1 font-mono">
+                      <Eye className="w-3.5 h-3.5 text-slate-500" /> {vid.viewsCount} مشاهدة
                     </span>
+
+                    <button
+                      type="button"
+                      onClick={() => setSelectedVideo(vid)}
+                      className="px-3.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs flex items-center gap-1 transition shadow"
+                    >
+                      <Play className="w-3.5 h-3.5" />
+                      <span>مشاهدة الفيديو</span>
+                    </button>
                   </div>
-
-                  <div>
-                    <span className="text-[10px] font-bold text-rose-400 font-mono">{vid.subject}</span>
-                    <h4 className="text-sm font-extrabold text-white leading-snug line-clamp-2">{vid.title}</h4>
-                  </div>
-
-                  <p className="text-xs text-slate-300 line-clamp-2">{vid.description}</p>
                 </div>
-
-                <div className="pt-3 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
-                  <span className="flex items-center gap-1 font-mono">
-                    <Eye className="w-3.5 h-3.5 text-slate-500" /> {vid.viewsCount} مشاهدة
-                  </span>
-
-                  <button
-                    type="button"
-                    onClick={() => setSelectedVideo(vid)}
-                    className="px-3.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs flex items-center gap-1 transition shadow"
-                  >
-                    <Play className="w-3.5 h-3.5" />
-                    <span>مشاهدة الفيديو</span>
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* --- STUDENT VIDEO PLAYER MODAL --- */}
@@ -139,7 +167,10 @@ export default function StudentVideosPage() {
                 className="max-w-3xl w-full p-6 rounded-3xl bg-slate-900 border border-rose-500/30 shadow-2xl space-y-4 text-white"
               >
                 <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                  <h3 className="text-base font-extrabold">{selectedVideo.title}</h3>
+                  <div>
+                    <h3 className="text-base font-extrabold">{selectedVideo.title}</h3>
+                    <span className="text-xs text-rose-400">{selectedVideo.grade}</span>
+                  </div>
                   <button type="button" onClick={() => setSelectedVideo(null)} className="p-1.5 text-slate-400 hover:text-white">
                     <X className="w-5 h-5" />
                   </button>

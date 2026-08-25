@@ -3,6 +3,7 @@
 import React from 'react';
 import { useEduPulse } from '@/lib/context/EduPulseContext';
 import { BanShield } from '@/components/BanShield';
+import { isMatchingGrade } from '@/lib/gradeUtils';
 import { Trophy, Award, PlusCircle, MinusCircle, Crown, Sparkles, Medal } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -11,9 +12,11 @@ export default function StudentScorecardPage() {
 
   if (!activeStudent) return null;
 
-  const sortedStudents = [...students].sort((a, b) => b.totalPoints - a.totalPoints);
+  // Filter leaderboard strictly for students in the same grade level
+  const gradeStudents = students.filter((s) => isMatchingGrade(s.grade, activeStudent.grade));
+  const sortedStudents = [...gradeStudents].sort((a, b) => b.totalPoints - a.totalPoints);
   const top3 = sortedStudents.slice(0, 3);
-  const myRank = sortedStudents.findIndex((s) => s.id === activeStudent.id) + 1;
+  const myRank = sortedStudents.findIndex((s) => s.id === activeStudent.id) + 1 || 1;
 
   const myLogs = gradeLogs.filter((g) => g.studentId === activeStudent.id);
 
@@ -22,19 +25,25 @@ export default function StudentScorecardPage() {
       <div className="space-y-8 pb-12">
         
         {/* Header */}
-        <div>
-          <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-3">
-            <Trophy className="w-7 h-7 text-amber-500" />
-            <span>{dict.scorecard.title}</span>
-          </h1>
-          <p className="text-xs text-slate-400 mt-1">{dict.scorecard.subtitle}</p>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+          <div>
+            <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-3">
+              <Trophy className="w-7 h-7 text-amber-500" />
+              <span>{dict.scorecard.title}</span>
+            </h1>
+            <p className="text-xs text-slate-400 mt-1">لوحة الأوائل والترتيب المخصص لـ ({activeStudent.grade})</p>
+          </div>
+
+          <span className="px-3 py-1.5 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 text-xs font-bold font-mono self-start sm:self-auto">
+            {activeStudent.grade}
+          </span>
         </div>
 
         {/* Top 3 Podium Visual */}
         <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-b from-slate-900 via-indigo-950 to-slate-950 border border-brand-500/30 shadow-2xl space-y-6">
           <h3 className="text-base font-extrabold text-white text-center flex items-center justify-center gap-2">
             <Crown className="w-5 h-5 text-amber-400" />
-            <span>{dict.scorecard.top3Title}</span>
+            <span>أوائل دفعة {activeStudent.grade} 🏆</span>
           </h3>
 
           <div className="grid grid-cols-3 gap-3 max-w-lg mx-auto items-end pt-4">
@@ -114,7 +123,7 @@ export default function StudentScorecardPage() {
             </div>
             <div>
               <h3 className="text-base font-extrabold text-white">{dict.scorecard.yourRank}</h3>
-              <p className="text-xs text-slate-400">ترتيبك بين جميع طلاب المركز الإجمالي</p>
+              <p className="text-xs text-slate-400">ترتيبك بين طلاب {activeStudent.grade} ({gradeStudents.length} طلاب)</p>
             </div>
           </div>
 

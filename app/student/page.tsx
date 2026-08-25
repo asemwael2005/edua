@@ -3,6 +3,7 @@
 import React from 'react';
 import { useEduPulse } from '@/lib/context/EduPulseContext';
 import { BanShield } from '@/components/BanShield';
+import { isMatchingGrade } from '@/lib/gradeUtils';
 import {
   GraduationCap,
   CalendarCheck,
@@ -26,6 +27,7 @@ export default function StudentDashboardPage() {
     students,
     quizzes,
     assignments,
+    sessions,
     curriculum,
     assignmentSubmissions,
     quizSubmissions,
@@ -34,12 +36,19 @@ export default function StudentDashboardPage() {
 
   if (!activeStudent) return null;
 
-  // Calculate student rank
-  const sortedStudents = [...students].sort((a, b) => b.totalPoints - a.totalPoints);
-  const studentRank = sortedStudents.findIndex((s) => s.id === activeStudent.id) + 1;
+  // Filter content strictly for the student's grade level
+  const gradeStudents = students.filter((s) => isMatchingGrade(s.grade, activeStudent.grade));
+  const sortedGradeStudents = [...gradeStudents].sort((a, b) => b.totalPoints - a.totalPoints);
+  const studentRank = sortedGradeStudents.findIndex((s) => s.id === activeStudent.id) + 1 || 1;
 
-  const activeQuiz = quizzes.find((q) => q.isOpen) || quizzes[0];
-  const activeAssignment = assignments[0];
+  const gradeQuizzes = quizzes.filter((q) => isMatchingGrade(q.grade, activeStudent.grade));
+  const activeQuiz = gradeQuizzes.find((q) => q.isOpen) || gradeQuizzes[0] || quizzes[0];
+
+  const gradeAssignments = assignments.filter((a) => isMatchingGrade(a.grade, activeStudent.grade));
+  const activeAssignment = gradeAssignments[0] || assignments[0];
+
+  const gradeSessions = sessions.filter((s) => isMatchingGrade(s.grade, activeStudent.grade));
+  const activeSession = gradeSessions[0] || sessions[0];
 
   return (
     <BanShield student={activeStudent}>
@@ -65,19 +74,21 @@ export default function StudentDashboardPage() {
                   <span>{activeStudent.grade}</span>
                 </div>
                 <h1 className="text-2xl font-extrabold tracking-tight">أهلاً بك يا {activeStudent.name} 👋</h1>
-                <p className="text-xs text-slate-300">مرحباً بك في منصة إديو بلس التعليمية. متابعة الدرجات والواجبات والحضور.</p>
+                <p className="text-xs text-slate-300">مرحباً بك في منصة إديo بلس. تم تخصيص المحتوى بالكامل لـ ({activeStudent.grade}).</p>
               </div>
             </div>
 
-            <div className="flex items-center gap-3 shrink-0">
-              <Link
-                href="/student/quizzes/quiz_1"
-                className="px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white font-extrabold text-xs shadow-lg transition flex items-center gap-2"
-              >
-                <FileCheck2 className="w-4 h-4" />
-                <span>بدء الاختبار الفوري</span>
-              </Link>
-            </div>
+            {activeQuiz && (
+              <div className="flex items-center gap-3 shrink-0">
+                <Link
+                  href={`/student/quizzes/${activeQuiz.id}`}
+                  className="px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white font-extrabold text-xs shadow-lg transition flex items-center gap-2"
+                >
+                  <FileCheck2 className="w-4 h-4" />
+                  <span>بدء اختبار الصف الخاص بك</span>
+                </Link>
+              </div>
+            )}
           </div>
         </motion.div>
 
@@ -104,14 +115,14 @@ export default function StudentDashboardPage() {
             <p className="text-[11px] text-slate-400">إجمالي البونص والدرجات</p>
           </div>
 
-          {/* Leaderboard Rank */}
+          {/* Leaderboard Rank within Grade */}
           <div className="p-5 rounded-2xl glass-panel border space-y-2">
             <div className="flex items-center justify-between text-xs font-semibold text-slate-400">
-              <span>{dict.scorecard.yourRank}</span>
+              <span>{dict.scorecard.yourRank} (دفعة الصف)</span>
               <Trophy className="w-4 h-4 text-brand-400" />
             </div>
             <span className="text-3xl font-black text-brand-400 font-mono">المركز #{studentRank}</span>
-            <p className="text-[11px] text-slate-400">من إجمالي {students.length} طلاب</p>
+            <p className="text-[11px] text-slate-400">من إجمالي {gradeStudents.length} طلاب بدفعتك</p>
           </div>
 
           {/* Upcoming Deadlines */}
@@ -120,8 +131,10 @@ export default function StudentDashboardPage() {
               <span>الموعد القادم</span>
               <Clock className="w-4 h-4 text-rose-400" />
             </div>
-            <span className="text-sm font-bold text-white truncate block">واجب التفاضل الضمني</span>
-            <p className="text-[11px] text-rose-400 font-semibold">متبقي 3 أيام للتسليم</p>
+            <span className="text-sm font-bold text-white truncate block">
+              {activeAssignment?.title || 'تكليفات الصف التفاعلية'}
+            </span>
+            <p className="text-[11px] text-rose-400 font-semibold">محتوى مخصص لصفك الدراسي</p>
           </div>
 
         </div>
@@ -129,68 +142,76 @@ export default function StudentDashboardPage() {
         {/* Action Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           
-          {/* Active Quiz Card */}
-          <div className="p-6 rounded-3xl glass-panel border space-y-4 flex flex-col justify-between">
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="px-3 py-1 rounded-xl bg-purple-950 text-purple-300 border border-purple-500/30 text-xs font-bold font-mono">
-                  اختبار متاح
-                </span>
-                <Clock className="w-4 h-4 text-purple-400" />
+          {/* Active Quiz Card for Grade */}
+          {activeQuiz && (
+            <div className="p-6 rounded-3xl glass-panel border space-y-4 flex flex-col justify-between">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="px-3 py-1 rounded-xl bg-purple-950 text-purple-300 border border-purple-500/30 text-xs font-bold font-mono">
+                    اختبار خاص بصفك
+                  </span>
+                  <Clock className="w-4 h-4 text-purple-400" />
+                </div>
+                <h3 className="text-base font-extrabold text-white">{activeQuiz.title}</h3>
+                <p className="text-xs text-slate-300">
+                  {activeQuiz.grade} | {activeQuiz.durationMinutes} دقيقة | {activeQuiz.questions.length} أسئلة
+                </p>
               </div>
-              <h3 className="text-base font-extrabold text-white">{activeQuiz?.title}</h3>
-              <p className="text-xs text-slate-300">المدة: {activeQuiz?.durationMinutes} دقيقة | {activeQuiz?.questions.length} أسئلة</p>
-            </div>
 
-            <Link
-              href={`/student/quizzes/${activeQuiz?.id || 'quiz_1'}`}
-              className="w-full py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-extrabold text-xs text-center shadow-lg transition block"
-            >
-              {dict.quizzes.startQuiz}
-            </Link>
-          </div>
+              <Link
+                href={`/student/quizzes/${activeQuiz.id}`}
+                className="w-full py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-extrabold text-xs text-center shadow-lg transition block"
+              >
+                {dict.quizzes.startQuiz}
+              </Link>
+            </div>
+          )}
 
           {/* Interactive Presentation Deck Card */}
-          <div className="p-6 rounded-3xl glass-panel border space-y-4 flex flex-col justify-between">
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="px-3 py-1 rounded-xl bg-brand-950 text-brand-300 border border-brand-500/30 text-xs font-bold font-mono">
-                  سلايدات المحاضرة
-                </span>
-                <Tv className="w-4 h-4 text-brand-400" />
+          {activeSession && (
+            <div className="p-6 rounded-3xl glass-panel border space-y-4 flex flex-col justify-between">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="px-3 py-1 rounded-xl bg-brand-950 text-brand-300 border border-brand-500/30 text-xs font-bold font-mono">
+                    سلايدات محاضرتك
+                  </span>
+                  <Tv className="w-4 h-4 text-brand-400" />
+                </div>
+                <h3 className="text-base font-extrabold text-white">{activeSession.title}</h3>
+                <p className="text-xs text-slate-300">{activeSession.grade} | شرح وسلايدات تفاعلية</p>
               </div>
-              <h3 className="text-base font-extrabold text-white">المحاضرة 5: التفاضل والتكامل التطبيقي</h3>
-              <p className="text-xs text-slate-300">سلايدات تفاعلية وحفظ آلي لتقدم القراءة</p>
-            </div>
 
-            <Link
-              href="/student/sessions/sess_1"
-              className="w-full py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-extrabold text-xs text-center shadow-lg transition block"
-            >
-              فتح السلايدات الآن
-            </Link>
-          </div>
+              <Link
+                href={`/student/sessions/${activeSession.id}`}
+                className="w-full py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-extrabold text-xs text-center shadow-lg transition block"
+              >
+                فتح السلايدات الآن
+              </Link>
+            </div>
+          )}
 
           {/* Pending Assignment Card */}
-          <div className="p-6 rounded-3xl glass-panel border space-y-4 flex flex-col justify-between">
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="px-3 py-1 rounded-xl bg-amber-950 text-amber-300 border border-amber-500/30 text-xs font-bold font-mono">
-                  واجب مطلوب
-                </span>
-                <BookOpenCheck className="w-4 h-4 text-amber-400" />
+          {activeAssignment && (
+            <div className="p-6 rounded-3xl glass-panel border space-y-4 flex flex-col justify-between">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="px-3 py-1 rounded-xl bg-amber-950 text-amber-300 border border-amber-500/30 text-xs font-bold font-mono">
+                    واجب صفك الدراسي
+                  </span>
+                  <BookOpenCheck className="w-4 h-4 text-amber-400" />
+                </div>
+                <h3 className="text-base font-extrabold text-white">{activeAssignment.title}</h3>
+                <p className="text-xs text-slate-300">{activeAssignment.grade} | الدرجة: {activeAssignment.maxScore} نقطة</p>
               </div>
-              <h3 className="text-base font-extrabold text-white">{activeAssignment?.title}</h3>
-              <p className="text-xs text-slate-300">الدرجة الكلية: {activeAssignment?.maxScore} نقطة</p>
-            </div>
 
-            <Link
-              href="/student/assignments"
-              className="w-full py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-extrabold text-xs text-center shadow-lg transition block"
-            >
-              تقديم الحل
-            </Link>
-          </div>
+              <Link
+                href="/student/assignments"
+                className="w-full py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-extrabold text-xs text-center shadow-lg transition block"
+              >
+                تقديم الحل
+              </Link>
+            </div>
+          )}
 
         </div>
 
