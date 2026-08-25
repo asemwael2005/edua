@@ -17,8 +17,10 @@ import {
   Lock,
 } from 'lucide-react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
 export const Header: React.FC<{ onToggleSidebar?: () => void }> = ({ onToggleSidebar }) => {
+  const pathname = usePathname();
   const {
     language,
     setLanguage,
@@ -94,7 +96,7 @@ export const Header: React.FC<{ onToggleSidebar?: () => void }> = ({ onToggleSid
         <div className="flex items-center gap-2.5">
 
           {/* Student Quick Account Selector */}
-          {userRole === 'student' && (
+          {userRole === 'student' && !pathname.startsWith('/admin') && (
             <div className="flex items-center gap-1.5 bg-emerald-950/30 border border-emerald-500/30 rounded-xl px-2.5 py-1">
               <UserCheck className="w-4 h-4 text-emerald-400 shrink-0" />
               <select

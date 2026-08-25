@@ -2,12 +2,12 @@
 
 import React, { useState } from 'react';
 import { useEduPulse } from '@/lib/context/EduPulseContext';
-import { ShieldCheck, Lock, ArrowRight, KeyRound, AlertCircle, Sparkles } from 'lucide-react';
+import { ShieldCheck, Lock, ArrowRight, KeyRound, AlertCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 
 export const AdminGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { isAdminAuthenticated, loginAdmin, dict, language } = useEduPulse();
+  const { isAdminAuthenticated, loginAdmin, language } = useEduPulse();
   const [inputPassword, setInputPassword] = useState('');
   const [error, setError] = useState(false);
 
@@ -24,7 +24,7 @@ export const AdminGuard: React.FC<{ children: React.ReactNode }> = ({ children }
   };
 
   return (
-    <div className="min-h-[75vh] flex items-center justify-center p-4">
+    <div className="min-h-[80vh] flex items-center justify-center p-4">
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -37,7 +37,7 @@ export const AdminGuard: React.FC<{ children: React.ReactNode }> = ({ children }
         <div>
           <h2 className="text-xl font-extrabold text-white tracking-tight">منطقة خاصة بإدارة المركز</h2>
           <p className="text-xs text-slate-400 mt-1">
-            هذه المنطقة محمية بكلمة سر الإدارة (كلمة السر الافتراضية: <span className="font-mono text-brand-300 font-bold">admin123</span>)
+            هذه المنطقة محمية ومخصصة لمسؤولي وإدارة المركز فقط. يرجى إدخال كلمة المرور للوصول.
           </p>
         </div>
 

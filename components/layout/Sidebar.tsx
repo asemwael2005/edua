@@ -13,21 +13,21 @@ import {
   Map,
   MessageSquareHeart,
   Trophy,
-  ShieldAlert,
-  Sparkles,
   ChevronRight,
   ChevronLeft,
-  BookMarked,
   Tv,
   Video,
-  Radio,
   ShieldCheck,
+  UserCheck,
 } from 'lucide-react';
 
 export const Sidebar: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
   const pathname = usePathname();
   const { userRole, dict, activeStudent, language } = useEduPulse();
   const [isCollapsed, setIsCollapsed] = useState(false);
+
+  const isAdminRoute = pathname.startsWith('/admin');
+  const effectiveRole = isAdminRoute ? 'admin' : userRole;
 
   const adminLinks = [
     { href: '/admin', label: dict.nav.dashboard, icon: LayoutDashboard },
@@ -50,7 +50,7 @@ export const Sidebar: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
     { href: '/student/scorecard', label: dict.nav.scorecard, icon: Trophy },
   ];
 
-  const links = userRole === 'admin' ? adminLinks : studentLinks;
+  const links = effectiveRole === 'admin' ? adminLinks : studentLinks;
 
   return (
     <>
@@ -77,15 +77,15 @@ export const Sidebar: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
             <div className={`p-3 rounded-2xl bg-gradient-to-br from-brand-950/60 via-slate-900/60 to-slate-800/60 border border-brand-500/30 flex items-center gap-3 w-full overflow-hidden ${
               isCollapsed ? 'justify-center p-2.5' : ''
             }`}>
-              {userRole === 'admin' ? (
+              {effectiveRole === 'admin' ? (
                 <>
                   <div className="w-9 h-9 rounded-xl bg-brand-600 flex items-center justify-center text-white font-bold shrink-0 shadow-md">
                     <ShieldCheck className="w-5 h-5" />
                   </div>
                   {!isCollapsed && (
                     <div className="overflow-hidden">
-                      <h4 className="text-xs font-extrabold text-white truncate">{dict.nav.admin}</h4>
-                      <p className="text-[10px] text-brand-400 font-semibold">{dict.nav.adminPortal}</p>
+                      <h4 className="text-xs font-extrabold text-white truncate">إدارة المركز</h4>
+                      <p className="text-[10px] text-brand-400 font-semibold">Master Admin</p>
                     </div>
                   )}
                 </>
@@ -153,15 +153,6 @@ export const Sidebar: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
             })}
           </nav>
         </div>
-
-        {/* Footer Brand Info */}
-        {!isCollapsed && (
-          <div className="pt-3 border-t border-slate-800/80 text-center">
-            <div className="text-[10px] text-slate-500 font-mono font-bold">
-              EduPulse Platform v1.0 • 2026
-            </div>
-          </div>
-        )}
       </aside>
     </>
   );
