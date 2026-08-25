@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useEduPulse } from '@/lib/context/EduPulseContext';
 import { BanShield } from '@/components/BanShield';
 import { QuizSubmissionAnswer } from '@/types/edupulse';
+import { isMatchingGrade } from '@/lib/gradeUtils';
 import {
   Clock,
   CheckCircle2,
@@ -31,17 +32,23 @@ export default function InteractiveQuizPlayerPage() {
 
   const currentStudent = activeStudent || students[0];
 
-  const quizId = (params?.id as string) || 'quiz_1';
-  const targetQuiz = quizzes.find((q) => q.id === quizId) || quizzes[0];
+  const rawQuizId = (params?.id as string) || 'quiz_1';
+  const cleanQuizId = rawQuizId.split('/')[0];
+
+  const gradeQuizzes = currentStudent ? quizzes.filter((q) => isMatchingGrade(q.grade, currentStudent.grade)) : quizzes;
+  const targetQuiz =
+    quizzes.find((q) => q.id === rawQuizId || q.id === cleanQuizId) ||
+    gradeQuizzes[0] ||
+    quizzes[0];
 
   // Check if student already submitted this quiz before
   const existingSubmission = quizSubmissions.find(
-    (s) => s.quizId === quizId && currentStudent && s.studentId === currentStudent.id
+    (s) => s.quizId === targetQuiz?.id && currentStudent && s.studentId === currentStudent.id
   );
 
   const [currentQIndex, setCurrentQIndex] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<Record<string, number | boolean | null>>({});
-  const [secondsLeft, setSecondsLeft] = useState((targetQuiz?.durationMinutes || 20) * 60);
+  const [secondsLeft, setSecondsLeft] = useState((targetQuiz?.durationMinutes || 15) * 60);
   const [isSubmitted, setIsSubmitted] = useState(!!existingSubmission);
   const [submissionResult, setSubmissionResult] = useState<any>(existingSubmission || null);
 
@@ -113,6 +120,18 @@ export default function InteractiveQuizPlayerPage() {
   const minutes = Math.floor(secondsLeft / 60);
   const seconds = secondsLeft % 60;
 
+  // Instant per-question evaluation helper
+  const hasAnsweredCurrent = selectedAnswers[currentQuestion.id] !== undefined;
+  const userChoiceCurrent = selectedAnswers[currentQuestion.id];
+  const isCurrentCorrect = userChoiceCurrent === currentQuestion.correctAnswer;
+
+  let currentCorrectText = '';
+  if (currentQuestion.type === 'mcq' && currentQuestion.options) {
+    currentCorrectText = currentQuestion.options[Number(currentQuestion.correctAnswer)] || '';
+  } else if (currentQuestion.type === 'true_false') {
+    currentCorrectText = currentQuestion.correctAnswer ? 'صح (True)' : 'خطأ (False)';
+  }
+
   return (
     <BanShield student={currentStudent}>
       <div className="max-w-4xl mx-auto space-y-6 pb-12">
@@ -121,7 +140,7 @@ export default function InteractiveQuizPlayerPage() {
         <div className="p-6 rounded-3xl glass-panel border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 text-xs font-bold text-purple-400 font-mono">
-              <Link href="/student/quizzes" className="hover:underline text-slate-400">الاختبارات</Link>
+              <Link href="/student/quizzes" className="hover:underline text-slate-400">الاختبارات الإلكترونية</Link>
               <span>/</span>
               <span>{targetQuiz.grade}</span>
             </div>
@@ -129,7 +148,7 @@ export default function InteractiveQuizPlayerPage() {
           </div>
 
           {!isSubmitted && (
-            <div className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-rose-950/80 border border-rose-500/40 text-rose-300 font-mono font-black text-lg">
+            <div className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-rose-950/80 border border-rose-500/40 text-rose-300 font-mono font-black text-lg shrink-0">
               <Clock className="w-5 h-5 text-rose-400 animate-pulse" />
               <span>
                 {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
@@ -139,24 +158,27 @@ export default function InteractiveQuizPlayerPage() {
         </div>
 
         {!isSubmitted ? (
-          /* ACTIVE EXAM UI */
+          /* ACTIVE EXAM WITH INSTANT PER-QUESTION FEEDBACK */
           <div className="space-y-6">
             
             {/* Question Navigator Pills */}
             <div className="flex items-center gap-2 overflow-x-auto p-2 rounded-2xl bg-slate-900 border border-slate-800">
               {targetQuiz.questions.map((q, idx) => {
-                const isAnswered = selectedAnswers[q.id] !== undefined;
-                const isCurrent = idx === currentQIndex;
+                const isAns = selectedAnswers[q.id] !== undefined;
+                const isCurr = idx === currentQIndex;
+                const isRight = selectedAnswers[q.id] === q.correctAnswer;
 
                 return (
                   <button
                     key={q.id}
                     onClick={() => setCurrentQIndex(idx)}
                     className={`w-9 h-9 rounded-xl font-extrabold text-xs transition flex items-center justify-center font-mono ${
-                      isCurrent
+                      isCurr
                         ? 'bg-purple-600 text-white shadow-lg ring-2 ring-purple-400'
-                        : isAnswered
-                        ? 'bg-emerald-950 text-emerald-400 border border-emerald-500/40'
+                        : isAns
+                        ? isRight
+                          ? 'bg-emerald-950 text-emerald-400 border border-emerald-500/40'
+                          : 'bg-rose-950 text-rose-400 border border-rose-500/40'
                         : 'bg-slate-950 text-slate-400 border border-slate-800'
                     }`}
                   >
@@ -190,6 +212,7 @@ export default function InteractiveQuizPlayerPage() {
                   <div className="space-y-3 pt-2">
                     {currentQuestion.options.map((opt, optIdx) => {
                       const isSelected = selectedAnswers[currentQuestion.id] === optIdx;
+                      const isCorrectChoice = optIdx === currentQuestion.correctAnswer;
 
                       return (
                         <button
@@ -197,13 +220,21 @@ export default function InteractiveQuizPlayerPage() {
                           onClick={() => handleSelectOption(currentQuestion.id, optIdx)}
                           className={`w-full p-4 rounded-2xl border text-right rtl:text-right ltr:text-left text-xs font-extrabold transition flex items-center justify-between ${
                             isSelected
-                              ? 'bg-purple-950/90 border-purple-500 text-purple-200 shadow-lg ring-1 ring-purple-400'
+                              ? isCorrectChoice
+                                ? 'bg-emerald-950/90 border-emerald-500 text-emerald-200 shadow-lg ring-1 ring-emerald-400'
+                                : 'bg-rose-950/90 border-rose-500 text-rose-200 shadow-lg ring-1 ring-rose-400'
+                              : hasAnsweredCurrent && isCorrectChoice
+                              ? 'bg-emerald-950/40 border-emerald-500/60 text-emerald-300'
                               : 'bg-slate-900/60 border-slate-800 text-slate-300 hover:bg-slate-800'
                           }`}
                         >
                           <span>{opt}</span>
                           <span className={`w-6 h-6 rounded-full border flex items-center justify-center text-[11px] font-mono font-bold ${
-                            isSelected ? 'bg-purple-600 border-purple-400 text-white' : 'border-slate-700 text-slate-400'
+                            isSelected
+                              ? isCorrectChoice
+                                ? 'bg-emerald-600 border-emerald-400 text-white'
+                                : 'bg-rose-600 border-rose-400 text-white'
+                              : 'border-slate-700 text-slate-400'
                           }`}>
                             {['أ', 'ب', 'ج', 'د'][optIdx]}
                           </span>
@@ -220,7 +251,9 @@ export default function InteractiveQuizPlayerPage() {
                       onClick={() => handleSelectOption(currentQuestion.id, true)}
                       className={`p-4 rounded-2xl border text-center font-extrabold text-xs transition ${
                         selectedAnswers[currentQuestion.id] === true
-                          ? 'bg-emerald-950/90 border-emerald-500 text-emerald-300 shadow-lg ring-1 ring-emerald-400'
+                          ? currentQuestion.correctAnswer === true
+                            ? 'bg-emerald-950/90 border-emerald-500 text-emerald-300 shadow-lg ring-1 ring-emerald-400'
+                            : 'bg-rose-950/90 border-rose-500 text-rose-300 shadow-lg ring-1 ring-rose-400'
                           : 'bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800'
                       }`}
                     >
@@ -231,7 +264,9 @@ export default function InteractiveQuizPlayerPage() {
                       onClick={() => handleSelectOption(currentQuestion.id, false)}
                       className={`p-4 rounded-2xl border text-center font-extrabold text-xs transition ${
                         selectedAnswers[currentQuestion.id] === false
-                          ? 'bg-rose-950/90 border-rose-500 text-rose-300 shadow-lg ring-1 ring-rose-400'
+                          ? currentQuestion.correctAnswer === false
+                            ? 'bg-emerald-950/90 border-emerald-500 text-emerald-300 shadow-lg ring-1 ring-emerald-400'
+                            : 'bg-rose-950/90 border-rose-500 text-rose-300 shadow-lg ring-1 ring-rose-400'
                           : 'bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800'
                       }`}
                     >
@@ -239,6 +274,43 @@ export default function InteractiveQuizPlayerPage() {
                     </button>
                   </div>
                 )}
+
+                {/* --- ⚡ INSTANT PER-QUESTION FEEDBACK & EXPLANATION BOX --- */}
+                {hasAnsweredCurrent && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="p-5 rounded-2xl border space-y-3 pt-4 font-sans text-xs"
+                  >
+                    {isCurrentCorrect ? (
+                      <div className="p-3.5 rounded-xl bg-emerald-950/80 border border-emerald-500/50 text-emerald-300 font-extrabold flex items-center gap-2">
+                        <Check className="w-5 h-5 text-emerald-400 shrink-0" />
+                        <span>أحسنت! إجابة صحيحة ممتازة (+{currentQuestion.points} نقاط) 🎉</span>
+                      </div>
+                    ) : (
+                      <div className="p-3.5 rounded-xl bg-rose-950/80 border border-rose-500/50 text-rose-300 font-extrabold space-y-1">
+                        <div className="flex items-center gap-2">
+                          <X className="w-5 h-5 text-rose-400 shrink-0" />
+                          <span>إجابتك خاطئة ❌</span>
+                        </div>
+                        <div className="text-emerald-300 text-xs font-mono pt-1">
+                          الإجابة الصحيحة النموذجية 🌟: <span className="font-bold underline">{currentCorrectText}</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {currentQuestion.explanation && (
+                      <div className="p-4 rounded-xl bg-slate-950 border border-brand-500/30 text-brand-200 space-y-1">
+                        <div className="flex items-center gap-1.5 text-brand-400 font-bold">
+                          <BookOpen className="w-4 h-4" />
+                          <span>💡 الشرح والخطوات التفصيلية للحل:</span>
+                        </div>
+                        <p className="text-xs text-slate-300 leading-relaxed pt-1">{currentQuestion.explanation}</p>
+                      </div>
+                    )}
+                  </motion.div>
+                )}
+
               </div>
 
               {/* Bottom Navigation */}
@@ -300,7 +372,7 @@ export default function InteractiveQuizPlayerPage() {
               <div className="flex items-center justify-between border-b border-slate-800 pb-4">
                 <h3 className="text-base font-extrabold text-white flex items-center gap-2">
                   <CheckCircle2 className="w-5 h-5 text-emerald-400" />
-                  <span>تفيصيل الإجابات والتصحيح النموذجي لكل سؤال 📊</span>
+                  <span>تفيصيل الإجابات والتصحيح النموذجية لكل سؤال 📊</span>
                 </h3>
 
                 <Link

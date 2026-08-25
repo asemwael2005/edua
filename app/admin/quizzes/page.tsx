@@ -19,6 +19,7 @@ import {
   Award,
   AlertTriangle,
   X,
+  Sparkles,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -31,19 +32,19 @@ export default function QuizzesAdminPage() {
   // New Quiz Form State
   const [quizTitle, setQuizTitle] = useState('');
   const [quizSubject, setQuizSubject] = useState('الرياضيات');
-  const [quizGrade, setQuizGrade] = useState('الصف الثالث الثانوي');
-  const [quizDuration, setQuizDuration] = useState(20);
+  const [quizGrade, setQuizGrade] = useState('الصف الأول الثانوي (Grade 10)');
+  const [quizDuration, setQuizDuration] = useState(15);
   const [quizStart, setQuizStart] = useState(new Date().toISOString().slice(0, 16));
   const [quizEnd, setQuizEnd] = useState(new Date(Date.now() + 86400000 * 3).toISOString().slice(0, 16));
 
   const [questions, setQuestions] = useState<Question[]>([
     {
       id: 'q_new_1',
-      text: 'إذا كانت ص = جا(2 س)، فإن دص/دس عند س = π/4 تساوي:',
+      text: 'إذا كان مميز المعادلة التربيعية س² - 6س + ك = 0 يقع في حقيقيين متساويين، فإن قيمة ك تساوي:',
       type: 'mcq',
-      options: ['0', '1', '2', '-2'],
+      options: ['9', '6', '36', '-9'],
       correctAnswer: 0,
-      explanation: 'دص/دس = 2 جتا(2س)، عند س = π/4 تكون 2 جتا(π/2) = 0.',
+      explanation: 'المميز ب² - 4أ جـ = 0  =>  (-6)² - 4(1)(ك) = 0  =>  36 - 4ك = 0  =>  ك = 9.',
       points: 5,
     },
   ]);
@@ -77,6 +78,7 @@ export default function QuizzesAdminPage() {
     setTempOpt2('');
     setTempOpt3('');
     setTempOpt4('');
+    setTempCorrect(0);
     setTempExplanation('');
   };
 
@@ -109,10 +111,11 @@ export default function QuizzesAdminPage() {
             <FileCheck2 className="w-7 h-7 text-purple-500" />
             <span>{dict.quizzes.title}</span>
           </h1>
-          <p className="text-xs text-slate-400 mt-1">{dict.quizzes.subtitle}</p>
+          <p className="text-xs text-slate-400 mt-1">إنشاء الاختبارات وتحديد الإجابات النموذجية لكل صف دراسي</p>
         </div>
 
         <button
+          type="button"
           onClick={() => setIsCreateModalOpen(true)}
           className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs shadow-lg shadow-purple-500/20 flex items-center gap-2 shrink-0 transition"
         >
@@ -134,11 +137,12 @@ export default function QuizzesAdminPage() {
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="px-3 py-1 rounded-xl bg-purple-950/80 text-purple-300 border border-purple-500/30 text-xs font-bold font-mono">
-                    {quiz.subject}
+                    {quiz.subject} | {quiz.grade}
                   </span>
 
                   {/* Open / Close Manual Toggle */}
                   <button
+                    type="button"
                     onClick={() => toggleQuizStatus(quiz.id)}
                     className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-extrabold transition ${
                       quiz.isOpen
@@ -172,6 +176,7 @@ export default function QuizzesAdminPage() {
                 </span>
 
                 <button
+                  type="button"
                   onClick={() => setAnalyticsQuiz(quiz)}
                   className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-purple-300 font-bold text-xs flex items-center gap-1.5 transition"
                 >
@@ -192,11 +197,11 @@ export default function QuizzesAdminPage() {
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}
-              className="max-w-2xl w-full p-6 rounded-3xl bg-slate-900 border border-purple-500/30 shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto"
+              className="max-w-2xl w-full p-6 rounded-3xl bg-slate-900 border border-purple-500/30 shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto text-white"
             >
               <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                <h3 className="text-lg font-extrabold text-white">{dict.quizzes.createQuiz}</h3>
-                <button onClick={() => setIsCreateModalOpen(false)} className="p-1.5 text-slate-400 hover:text-white">
+                <h3 className="text-lg font-extrabold">{dict.quizzes.createQuiz}</h3>
+                <button type="button" onClick={() => setIsCreateModalOpen(false)} className="p-1.5 text-slate-400 hover:text-white">
                   <X className="w-5 h-5" />
                 </button>
               </div>
@@ -209,36 +214,82 @@ export default function QuizzesAdminPage() {
                     required
                     value={quizTitle}
                     onChange={(e) => setQuizTitle(e.target.value)}
-                    placeholder="مثال: اختبار التفاضل والمعدلات الزمنية"
+                    placeholder="مثال: اختبار الجبر والمعادلات - الصف الأول الثانوي"
                     className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white focus:outline-none focus:border-purple-500"
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-3 gap-3">
                   <div className="space-y-1">
                     <label className="text-slate-300">المادة الدراسية</label>
                     <input
                       type="text"
                       value={quizSubject}
                       onChange={(e) => setQuizSubject(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white"
+                      className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white"
                     />
                   </div>
+
+                  <div className="space-y-1">
+                    <label className="text-slate-300">الصف الدراسي المستهدف</label>
+                    <select
+                      value={quizGrade}
+                      onChange={(e) => setQuizGrade(e.target.value)}
+                      className="w-full px-2 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white text-[11px]"
+                    >
+                      <option value="الصف الأول الثانوي (Grade 10)">الصف الأول الثانوي (Grade 10)</option>
+                      <option value="الصف الثاني الثانوي (Grade 11)">الصف الثاني الثانوي (Grade 11)</option>
+                      <option value="الصف الثالث الثانوي (Grade 12)">الصف الثالث الثانوي (Grade 12)</option>
+                    </select>
+                  </div>
+
                   <div className="space-y-1">
                     <label className="text-slate-300">{dict.quizzes.durationMinutes}</label>
                     <input
                       type="number"
                       value={quizDuration}
                       onChange={(e) => setQuizDuration(Number(e.target.value))}
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white font-mono"
+                      className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white font-mono"
                     />
                   </div>
                 </div>
 
                 {/* Question Creator Widget */}
                 <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-3">
-                  <h4 className="font-extrabold text-purple-300">إضافة سؤال جديد للاختبار</h4>
+                  <h4 className="font-extrabold text-purple-300 flex items-center gap-1.5">
+                    <Plus className="w-4 h-4 text-purple-400" />
+                    <span>إضافة سؤال جديد وتحديد الإجابة النموذجية 🌟</span>
+                  </h4>
                   
+                  <div className="space-y-1">
+                    <label className="text-slate-400">نوع السؤال</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setTempQType('mcq')}
+                        className={`p-2 rounded-xl border font-bold transition ${
+                          tempQType === 'mcq'
+                            ? 'bg-purple-950 border-purple-500 text-purple-200'
+                            : 'bg-slate-900 border-slate-800 text-slate-400'
+                        }`}
+                      >
+                        اختيار من متعدد (MCQ)
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setTempQType('true_false')}
+                        className={`p-2 rounded-xl border font-bold transition ${
+                          tempQType === 'true_false'
+                            ? 'bg-purple-950 border-purple-500 text-purple-200'
+                            : 'bg-slate-900 border-slate-800 text-slate-400'
+                        }`}
+                      >
+                        صح أم خطأ (True / False)
+                      </button>
+                    </div>
+                  </div>
+
                   <input
                     type="text"
                     value={tempQText}
@@ -247,51 +298,89 @@ export default function QuizzesAdminPage() {
                     className="w-full p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white"
                   />
 
-                  <div className="grid grid-cols-2 gap-2">
-                    <input
-                      type="text"
-                      value={tempOpt1}
-                      onChange={(e) => setTempOpt1(e.target.value)}
-                      placeholder="الخيار الأول (أ)"
-                      className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-white"
-                    />
-                    <input
-                      type="text"
-                      value={tempOpt2}
-                      onChange={(e) => setTempOpt2(e.target.value)}
-                      placeholder="الخيار الثاني (ب)"
-                      className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-white"
-                    />
-                    <input
-                      type="text"
-                      value={tempOpt3}
-                      onChange={(e) => setTempOpt3(e.target.value)}
-                      placeholder="الخيار الثالث (ج)"
-                      className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-white"
-                    />
-                    <input
-                      type="text"
-                      value={tempOpt4}
-                      onChange={(e) => setTempOpt4(e.target.value)}
-                      placeholder="الخيار الرابع (د)"
-                      className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-white"
-                    />
-                  </div>
+                  {tempQType === 'mcq' ? (
+                    <>
+                      <div className="grid grid-cols-2 gap-2">
+                        <input
+                          type="text"
+                          value={tempOpt1}
+                          onChange={(e) => setTempOpt1(e.target.value)}
+                          placeholder="الخيار الأول (أ)"
+                          className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-white"
+                        />
+                        <input
+                          type="text"
+                          value={tempOpt2}
+                          onChange={(e) => setTempOpt2(e.target.value)}
+                          placeholder="الخيار الثاني (ب)"
+                          className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-white"
+                        />
+                        <input
+                          type="text"
+                          value={tempOpt3}
+                          onChange={(e) => setTempOpt3(e.target.value)}
+                          placeholder="الخيار الثالث (ج)"
+                          className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-white"
+                        />
+                        <input
+                          type="text"
+                          value={tempOpt4}
+                          onChange={(e) => setTempOpt4(e.target.value)}
+                          placeholder="الخيار الرابع (د)"
+                          className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-white"
+                        />
+                      </div>
+
+                      {/* Correct Option Selector for MCQ */}
+                      <div className="space-y-1 pt-1">
+                        <label className="text-emerald-400 font-bold flex items-center gap-1.5">
+                          <CheckCircle className="w-4 h-4" />
+                          <span>اختر الخيار الصحيح (الإجابة النموذجية 🌟):</span>
+                        </label>
+                        <select
+                          value={tempCorrect}
+                          onChange={(e) => setTempCorrect(Number(e.target.value))}
+                          className="w-full p-2.5 rounded-xl bg-slate-900 border border-emerald-500/60 text-emerald-300 font-bold focus:outline-none"
+                        >
+                          <option value={0}>الخيار الأول (أ): {tempOpt1 || 'أ'}</option>
+                          <option value={1}>الخيار الثاني (ب): {tempOpt2 || 'ب'}</option>
+                          <option value={2}>الخيار الثالث (ج): {tempOpt3 || 'ج'}</option>
+                          <option value={3}>الخيار الرابع (د): {tempOpt4 || 'د'}</option>
+                        </select>
+                      </div>
+                    </>
+                  ) : (
+                    /* Correct Option Selector for True / False */
+                    <div className="space-y-1 pt-1">
+                      <label className="text-emerald-400 font-bold flex items-center gap-1.5">
+                        <CheckCircle className="w-4 h-4" />
+                        <span>اختر الإجابة النموذجية الصحيحة:</span>
+                      </label>
+                      <select
+                        value={tempCorrect}
+                        onChange={(e) => setTempCorrect(Number(e.target.value))}
+                        className="w-full p-2.5 rounded-xl bg-slate-900 border border-emerald-500/60 text-emerald-300 font-bold focus:outline-none"
+                      >
+                        <option value={0}>صح (True) 🟢</option>
+                        <option value={1}>خطأ (False) 🔴</option>
+                      </select>
+                    </div>
+                  )}
 
                   <textarea
                     rows={2}
                     value={tempExplanation}
                     onChange={(e) => setTempExplanation(e.target.value)}
-                    placeholder="التوضيح وتفسير الإجابة..."
+                    placeholder="الشرح والتفسير التفصيلي للإجابة ليظهر للطالب عند الإجابة..."
                     className="w-full p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white"
                   />
 
                   <button
                     type="button"
                     onClick={handleAddQuestion}
-                    className="w-full py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold transition"
+                    className="w-full py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold transition shadow"
                   >
-                    إضافة السؤال لقائمة الأسئلة ({questions.length})
+                    إضافة السؤال لقائمة أسئلة الاختبار ({questions.length})
                   </button>
                 </div>
 
@@ -331,7 +420,7 @@ export default function QuizzesAdminPage() {
                   <h3 className="text-base font-extrabold">{analyticsQuiz.title}</h3>
                   <p className="text-xs text-slate-400">تحليل نتائج الإجابات والأخطاء الشائعة</p>
                 </div>
-                <button onClick={() => setAnalyticsQuiz(null)} className="p-1.5 text-slate-400 hover:text-white">
+                <button type="button" onClick={() => setAnalyticsQuiz(null)} className="p-1.5 text-slate-400 hover:text-white">
                   <X className="w-5 h-5" />
                 </button>
               </div>
