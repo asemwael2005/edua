@@ -224,6 +224,24 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       .catch(() => {});
   }, []);
 
+  // Auto-sync session from server cookie on mount
+  useEffect(() => {
+    fetch('/api/auth/me')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && data.authenticated && data.user) {
+          if (data.user.role === 'student' && data.user.id) {
+            setUserRoleState('student');
+            setActiveStudentIdState(data.user.id);
+          } else if (data.user.role === 'admin') {
+            setUserRoleState('admin');
+            setIsAdminAuthenticated(true);
+          }
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   // HTML Attributes sync (lang, dir, theme class)
   useEffect(() => {
     const root = document.documentElement;
@@ -694,7 +712,11 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     showToast(language === 'ar' ? 'تم تفريغ المنصة وتصفير البيانات للاستخدام الحقيقي 🧹' : 'Cleared all data for real production');
   };
 
-  const activeStudent = students.find((s) => s.id === activeStudentId);
+  const activeStudent =
+    students.find((s) => s.id === activeStudentId) ||
+    students[0] ||
+    initialStudents[0];
+
   const dict = dictionary[language];
 
   return (

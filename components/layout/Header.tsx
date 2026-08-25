@@ -97,6 +97,23 @@ export const Header: React.FC<{ onToggleSidebar?: () => void }> = ({ onToggleSid
 
 
 
+          {/* Logout Button */}
+          <button
+            onClick={async () => {
+              try {
+                await fetch('/api/auth/logout', { method: 'POST' });
+              } catch (e) {}
+              logoutAdmin();
+              setUserRole('student');
+              showToast('تم تسجيل الخروج بنجاح 🚪');
+            }}
+            className="p-2 rounded-xl border border-rose-500/30 bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 text-xs font-bold transition flex items-center gap-1.5"
+            title="تسجيل الخروج من الحساب"
+          >
+            <LogOut className="w-4 h-4 text-rose-400" />
+            <span className="hidden sm:inline">خروج 🚪</span>
+          </button>
+
           {/* Login Link */}
           <Link
             href="/login"

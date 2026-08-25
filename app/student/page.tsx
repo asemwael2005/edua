@@ -34,24 +34,25 @@ export default function StudentDashboardPage() {
     language,
   } = useEduPulse();
 
-  if (!activeStudent) return null;
+  const currentStudent = activeStudent || students[0];
+  if (!currentStudent) return null;
 
   // Filter content strictly for the student's grade level
-  const gradeStudents = students.filter((s) => isMatchingGrade(s.grade, activeStudent.grade));
+  const gradeStudents = students.filter((s) => isMatchingGrade(s.grade, currentStudent.grade));
   const sortedGradeStudents = [...gradeStudents].sort((a, b) => b.totalPoints - a.totalPoints);
-  const studentRank = sortedGradeStudents.findIndex((s) => s.id === activeStudent.id) + 1 || 1;
+  const studentRank = sortedGradeStudents.findIndex((s) => s.id === currentStudent.id) + 1 || 1;
 
-  const gradeQuizzes = quizzes.filter((q) => isMatchingGrade(q.grade, activeStudent.grade));
+  const gradeQuizzes = quizzes.filter((q) => isMatchingGrade(q.grade, currentStudent.grade));
   const activeQuiz = gradeQuizzes.find((q) => q.isOpen) || gradeQuizzes[0] || quizzes[0];
 
-  const gradeAssignments = assignments.filter((a) => isMatchingGrade(a.grade, activeStudent.grade));
+  const gradeAssignments = assignments.filter((a) => isMatchingGrade(a.grade, currentStudent.grade));
   const activeAssignment = gradeAssignments[0] || assignments[0];
 
-  const gradeSessions = sessions.filter((s) => isMatchingGrade(s.grade, activeStudent.grade));
+  const gradeSessions = sessions.filter((s) => isMatchingGrade(s.grade, currentStudent.grade));
   const activeSession = gradeSessions[0] || sessions[0];
 
   return (
-    <BanShield student={activeStudent}>
+    <BanShield student={currentStudent}>
       <div className="space-y-8 pb-12">
         
         {/* Welcome Hero Card */}
@@ -64,17 +65,17 @@ export default function StudentDashboardPage() {
           <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
             <div className="flex items-center gap-4">
               <img
-                src={activeStudent.avatar}
-                alt={activeStudent.name}
+                src={currentStudent.avatar}
+                alt={currentStudent.name}
                 className="w-16 h-16 rounded-2xl object-cover border-2 border-emerald-400 shadow-xl shrink-0"
               />
               <div className="space-y-1">
                 <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 text-xs font-bold">
                   <GraduationCap className="w-3.5 h-3.5" />
-                  <span>{activeStudent.grade}</span>
+                  <span>{currentStudent.grade}</span>
                 </div>
-                <h1 className="text-2xl font-extrabold tracking-tight">أهلاً بك يا {activeStudent.name} 👋</h1>
-                <p className="text-xs text-slate-300">مرحباً بك في منصة إديo بلس. تم تخصيص المحتوى بالكامل لـ ({activeStudent.grade}).</p>
+                <h1 className="text-2xl font-extrabold tracking-tight">أهلاً بك يا {currentStudent.name} 👋</h1>
+                <p className="text-xs text-slate-300">مرحباً بك في منصة إديو بلس. تم تخصيص المحتوى بالكامل لـ ({currentStudent.grade}).</p>
               </div>
             </div>
 
@@ -101,7 +102,7 @@ export default function StudentDashboardPage() {
               <span>{dict.metrics.attendanceRate}</span>
               <CalendarCheck className="w-4 h-4 text-emerald-400" />
             </div>
-            <span className="text-3xl font-black text-white font-mono">{activeStudent.attendanceRate}%</span>
+            <span className="text-3xl font-black text-white font-mono">{currentStudent.attendanceRate}%</span>
             <p className="text-[11px] text-emerald-400 font-bold">نسبة انضباط ممتازة</p>
           </div>
 
@@ -111,7 +112,7 @@ export default function StudentDashboardPage() {
               <span>{dict.scorecard.ledgerTitle}</span>
               <Award className="w-4 h-4 text-amber-400" />
             </div>
-            <span className="text-3xl font-black text-amber-400 font-mono">{activeStudent.totalPoints} ن</span>
+            <span className="text-3xl font-black text-amber-400 font-mono">{currentStudent.totalPoints} ن</span>
             <p className="text-[11px] text-slate-400">إجمالي البونص والدرجات</p>
           </div>
 

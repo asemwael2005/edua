@@ -10,15 +10,16 @@ import { Video, Radio, Play, Clock, Eye, Sparkles, ExternalLink, X, Film } from 
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function StudentVideosPage() {
-  const { dict, videos, sessions, activeStudent, showToast } = useEduPulse();
+  const { dict, videos, sessions, students, activeStudent, showToast } = useEduPulse();
   const [selectedVideo, setSelectedVideo] = useState<RecordedVideo | null>(null);
 
-  if (!activeStudent) return null;
+  const currentStudent = activeStudent || students[0];
+  if (!currentStudent) return null;
 
   // Filter Videos and Live Broadcasts by student's grade level
-  const filteredVideos = videos.filter((v) => isMatchingGrade(v.grade, activeStudent.grade));
+  const filteredVideos = videos.filter((v) => isMatchingGrade(v.grade, currentStudent.grade));
   const activeLiveSession = sessions.find(
-    (s) => s.isLive && isMatchingGrade(s.grade, activeStudent.grade)
+    (s) => s.isLive && isMatchingGrade(s.grade, currentStudent.grade)
   );
 
   const liveUrl = activeLiveSession?.liveMeetingUrl ? normalizeAndValidateUrl(activeLiveSession.liveMeetingUrl) : null;
@@ -33,7 +34,7 @@ export default function StudentVideosPage() {
   };
 
   return (
-    <BanShield student={activeStudent}>
+    <BanShield student={currentStudent}>
       <div className="space-y-8 pb-12">
         
         {/* Header */}
@@ -44,12 +45,12 @@ export default function StudentVideosPage() {
               <span>تسجيلات المحاضرات والغرفة الحية</span>
             </h1>
             <p className="text-xs text-slate-400 mt-1">
-              تعرض الفيديوهات والبث المباشر المخصص لصفك الدراسي ({activeStudent.grade})
+              تعرض الفيديوهات والبث المباشر المخصص لصفك الدراسي ({currentStudent.grade})
             </p>
           </div>
 
           <span className="px-3 py-1.5 rounded-xl bg-rose-500/10 text-rose-400 border border-rose-500/20 text-xs font-bold font-mono self-start sm:self-auto">
-            {activeStudent.grade}
+            {currentStudent.grade}
           </span>
         </div>
 
@@ -92,14 +93,14 @@ export default function StudentVideosPage() {
         <div className="space-y-4">
           <h3 className="text-base font-extrabold text-white flex items-center gap-2">
             <Film className="w-5 h-5 text-rose-400" />
-            <span>مكتبة فيديوهات وصممت لـ ({activeStudent.grade})</span>
+            <span>مكتبة فيديوهات وصممت لـ ({currentStudent.grade})</span>
           </h3>
 
           {filteredVideos.length === 0 ? (
             <div className="p-12 text-center rounded-3xl glass-panel border space-y-2">
               <Film className="w-10 h-10 text-slate-600 mx-auto" />
               <h4 className="text-sm font-bold text-slate-300">لا توجد تسجيلات مرئية متاحة لصفك الدراسي حالياً</h4>
-              <p className="text-xs text-slate-500">سيتم رفع تسجيلات محاضرات {activeStudent.grade} فور انتهاء الحصص</p>
+              <p className="text-xs text-slate-500">سيتم رفع تسجيلات محاضرات {currentStudent.grade} فور انتهاء الحصص</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
