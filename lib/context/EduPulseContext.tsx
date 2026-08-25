@@ -74,6 +74,7 @@ interface EduPulseContextType {
   adjustGrade: (studentId: string, amount: number, type: 'bonus' | 'deduction', reason: string, adminName?: string) => void;
   markAttendance: (sessionId: string, studentId: string, status: AttendanceStatus) => void;
   updateSlideProgress: (sessionId: string, studentId: string, slideNumber: number) => void;
+  createSession: (sessionData: Omit<Session, 'id' | 'attendance' | 'studentProgress'>) => void;
   createQuiz: (quiz: Omit<Quiz, 'id'>) => void;
   toggleQuizStatus: (quizId: string) => void;
   submitQuiz: (submission: Omit<QuizSubmission, 'id' | 'submittedAt'>) => void;
@@ -394,6 +395,19 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     saveState('sessions', updatedSessions);
   };
 
+  const createSession = (sessionData: Omit<Session, 'id' | 'attendance' | 'studentProgress'>) => {
+    const newSession: Session = {
+      ...sessionData,
+      id: `sess_${Date.now()}`,
+      attendance: {},
+      studentProgress: {},
+    };
+    const updated = [newSession, ...sessions];
+    setSessions(updated);
+    saveState('sessions', updated);
+    showToast(language === 'ar' ? 'تمت إضافة المحاضرة/الجلسة التعليمية بنجاح' : 'Session created successfully');
+  };
+
   const createQuiz = (quizData: Omit<Quiz, 'id'>) => {
     const newQuiz: Quiz = {
       ...quizData,
@@ -614,6 +628,7 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         adjustGrade,
         markAttendance,
         updateSlideProgress,
+        createSession,
         createQuiz,
         toggleQuizStatus,
         submitQuiz,
