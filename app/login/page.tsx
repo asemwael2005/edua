@@ -22,7 +22,7 @@ function LoginFormContent() {
   const { students, loginAdmin, setUserRole, setActiveStudentId, dict, language } = useEduPulse();
 
   const redirectParam = searchParams.get('redirect');
-  const [role, setRole] = useState<'student' | 'admin'>('admin');
+  const [role, setRole] = useState<'student' | 'admin'>('student');
   const [studentCode, setStudentCode] = useState('');
   const [password, setPassword] = useState('');
   const [adminPasswordInput, setAdminPasswordInput] = useState('');
@@ -65,8 +65,9 @@ function LoginFormContent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           role,
-          password: adminPasswordInput,
+          password: role === 'admin' ? adminPasswordInput : password,
           studentCode,
+          customStudents: students,
         }),
       });
 
@@ -169,7 +170,7 @@ function LoginFormContent() {
                     required
                     value={studentCode}
                     onChange={(e) => setStudentCode(e.target.value)}
-                    placeholder="أدخل كود الطالب الخاص بك..."
+                    placeholder="أدخل كود الطالب أو البريد..."
                     className="w-full ltr:pl-10 rtl:pr-10 ltr:pr-4 rtl:pl-4 py-3 rounded-xl bg-slate-950 border border-slate-800 text-white font-mono focus:outline-none focus:border-brand-500"
                   />
                 </div>
