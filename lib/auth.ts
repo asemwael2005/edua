@@ -28,16 +28,36 @@ async function getHmacKey(): Promise<CryptoKey> {
   );
 }
 
+// UTF-8 Safe Base64URL Encoding
 function base64UrlEncode(str: string): string {
-  return btoa(str).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+  try {
+    const utf8Bytes = new TextEncoder().encode(str);
+    let binary = '';
+    for (let i = 0; i < utf8Bytes.length; i++) {
+      binary += String.fromCharCode(utf8Bytes[i]);
+    }
+    return btoa(binary).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+  } catch (e) {
+    return '';
+  }
 }
 
+// UTF-8 Safe Base64URL Decoding
 function base64UrlDecode(str: string): string {
-  let base64 = str.replace(/-/g, '+').replace(/_/g, '/');
-  while (base64.length % 4) {
-    base64 += '=';
+  try {
+    let base64 = str.replace(/-/g, '+').replace(/_/g, '/');
+    while (base64.length % 4) {
+      base64 += '=';
+    }
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    return new TextDecoder().decode(bytes);
+  } catch (e) {
+    return '';
   }
-  return atob(base64);
 }
 
 export async function createSessionToken(payload: Omit<SessionPayload, 'iat' | 'exp'>, durationHours = 24): Promise<string> {
@@ -63,6 +83,7 @@ export async function createSessionToken(payload: Omit<SessionPayload, 'iat' | '
 
 export async function verifySessionToken(token: string): Promise<SessionPayload | null> {
   try {
+    if (!token || typeof token !== 'string') return null;
     const parts = token.split('.');
     if (parts.length !== 3) return null;
 
@@ -81,7 +102,10 @@ export async function verifySessionToken(token: string): Promise<SessionPayload 
 
     if (!isValid) return null;
 
-    const payload: SessionPayload = JSON.parse(base64UrlDecode(encodedPayload));
+    const decodedStr = base64UrlDecode(encodedPayload);
+    if (!decodedStr) return null;
+
+    const payload: SessionPayload = JSON.parse(decodedStr);
     const now = Math.floor(Date.now() / 1000);
 
     if (payload.exp && payload.exp < now) {

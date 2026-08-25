@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { verifySessionToken, COOKIE_NAME } from '@/lib/auth';
+import { verifySessionToken, COOKIE_NAME, SessionPayload } from '@/lib/auth';
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -14,8 +14,15 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const token = request.cookies.get(COOKIE_NAME)?.value;
-  const session = token ? await verifySessionToken(token) : null;
+  let session: SessionPayload | null = null;
+  try {
+    const token = request.cookies.get(COOKIE_NAME)?.value;
+    if (token) {
+      session = await verifySessionToken(token);
+    }
+  } catch (err) {
+    session = null;
+  }
 
   // 1. Protect Admin Pages (/admin & /admin/*)
   if (pathname.startsWith('/admin')) {
