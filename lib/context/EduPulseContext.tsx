@@ -83,6 +83,7 @@ interface EduPulseContextType {
   updateCurriculumMilestone: (milestone: CurriculumMilestone) => void;
   addSessionFeedback: (feedback: Omit<SessionFeedback, 'id' | 'submittedAt'>) => void;
   resetToDefaultData: () => void;
+  clearAllData: () => void;
 }
 
 const EduPulseContext = createContext<EduPulseContextType | undefined>(undefined);
@@ -549,6 +550,30 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     showToast(language === 'ar' ? 'تمت إعادة ضبط البيانات الافتراضية' : 'Reset to default seed data');
   };
 
+  const clearAllData = () => {
+    setStudents([]);
+    setSessions([]);
+    setQuizzes([]);
+    setAssignments([]);
+    setAssignmentSubmissions([]);
+    setQuizSubmissions([]);
+    setCurriculum([]);
+    setFeedback([]);
+    setGradeLogs([]);
+
+    localStorage.setItem(`${STORAGE_PREFIX}students`, JSON.stringify([]));
+    localStorage.setItem(`${STORAGE_PREFIX}sessions`, JSON.stringify([]));
+    localStorage.setItem(`${STORAGE_PREFIX}quizzes`, JSON.stringify([]));
+    localStorage.setItem(`${STORAGE_PREFIX}assignments`, JSON.stringify([]));
+    localStorage.setItem(`${STORAGE_PREFIX}asgn_subs`, JSON.stringify([]));
+    localStorage.setItem(`${STORAGE_PREFIX}quiz_subs`, JSON.stringify([]));
+    localStorage.setItem(`${STORAGE_PREFIX}curriculum`, JSON.stringify([]));
+    localStorage.setItem(`${STORAGE_PREFIX}feedback`, JSON.stringify([]));
+    localStorage.setItem(`${STORAGE_PREFIX}grade_logs`, JSON.stringify([]));
+
+    showToast(language === 'ar' ? 'تم تفريغ المنصة وتصفير البيانات للاستخدام الحقيقي 🧹' : 'Cleared all data for real production');
+  };
+
   const activeStudent = students.find((s) => s.id === activeStudentId);
   const dict = dictionary[language];
 
@@ -598,6 +623,7 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         updateCurriculumMilestone,
         addSessionFeedback,
         resetToDefaultData,
+        clearAllData,
       }}
     >
       {children}
