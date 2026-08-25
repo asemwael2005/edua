@@ -4,16 +4,27 @@ import React, { useState } from 'react';
 import { useEduPulse } from '@/lib/context/EduPulseContext';
 import { BanShield } from '@/components/BanShield';
 import { RecordedVideo } from '@/types/edupulse';
+import { normalizeAndValidateUrl } from '@/app/admin/videos/page';
 import { Video, Radio, Play, Clock, Eye, Sparkles, ExternalLink, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function StudentVideosPage() {
-  const { dict, videos, sessions, activeStudent } = useEduPulse();
+  const { dict, videos, sessions, activeStudent, showToast } = useEduPulse();
   const [selectedVideo, setSelectedVideo] = useState<RecordedVideo | null>(null);
 
   if (!activeStudent) return null;
 
   const activeLiveSession = sessions.find((s) => s.isLive);
+  const liveUrl = activeLiveSession?.liveMeetingUrl ? normalizeAndValidateUrl(activeLiveSession.liveMeetingUrl) : null;
+
+  const handleJoinLive = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!liveUrl) {
+      showToast('رابط البث المباشر غير صالح أو غير متوفر حالياً', 'error');
+      return;
+    }
+    window.open(liveUrl, '_blank', 'noopener,noreferrer');
+  };
 
   return (
     <BanShield student={activeStudent}>
@@ -49,16 +60,15 @@ export default function StudentVideosPage() {
                 </div>
               </div>
 
-              {activeLiveSession.liveMeetingUrl && (
-                <a
-                  href={activeLiveSession.liveMeetingUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
+              {liveUrl && (
+                <button
+                  type="button"
+                  onClick={handleJoinLive}
                   className="px-6 py-3 rounded-2xl bg-rose-600 hover:bg-rose-500 text-white font-black text-xs shadow-xl shadow-rose-500/30 flex items-center gap-2 shrink-0 transition"
                 >
                   <ExternalLink className="w-4 h-4" />
                   <span>انضمام للبث المباشر الآن</span>
-                </a>
+                </button>
               )}
             </div>
           </motion.div>
@@ -79,6 +89,7 @@ export default function StudentVideosPage() {
                     <img src={vid.thumbnailUrl} alt={vid.title} className="w-full h-full object-cover group-hover:scale-105 transition duration-300" />
                     <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-90 group-hover:opacity-100 transition">
                       <button
+                        type="button"
                         onClick={() => setSelectedVideo(vid)}
                         className="w-12 h-12 rounded-2xl bg-rose-600/90 text-white flex items-center justify-center shadow-xl glow-rose transform group-hover:scale-110 transition"
                       >
@@ -104,6 +115,7 @@ export default function StudentVideosPage() {
                   </span>
 
                   <button
+                    type="button"
                     onClick={() => setSelectedVideo(vid)}
                     className="px-3.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs flex items-center gap-1 transition shadow"
                   >
@@ -128,7 +140,7 @@ export default function StudentVideosPage() {
               >
                 <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                   <h3 className="text-base font-extrabold">{selectedVideo.title}</h3>
-                  <button onClick={() => setSelectedVideo(null)} className="p-1.5 text-slate-400 hover:text-white">
+                  <button type="button" onClick={() => setSelectedVideo(null)} className="p-1.5 text-slate-400 hover:text-white">
                     <X className="w-5 h-5" />
                   </button>
                 </div>

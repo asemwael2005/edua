@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useEduPulse } from '@/lib/context/EduPulseContext';
 import { FileUpload } from '@/components/ui/FileUpload';
 import { RecordedVideo } from '@/types/edupulse';
@@ -18,19 +18,56 @@ import {
   Sparkles,
   CheckCircle,
   ExternalLink,
+  Square,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
+// URL Normalization & Security Validation Helper
+export const normalizeAndValidateUrl = (url: string): string | null => {
+  if (!url || typeof url !== 'string') return null;
+  let trimmed = url.trim();
+  if (!trimmed) return null;
+
+  // Reject malicious pseudo-protocols
+  if (/^(javascript|data|file|vbscript):/i.test(trimmed)) {
+    return null;
+  }
+
+  // Auto-prefix missing http/https protocol
+  if (!/^https?:\/\//i.test(trimmed)) {
+    trimmed = `https://${trimmed}`;
+  }
+
+  try {
+    const parsed = new URL(trimmed);
+    if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+      return parsed.href;
+    }
+    return null;
+  } catch (e) {
+    return null;
+  }
+};
+
 export default function AdminVideosPage() {
-  const { dict, videos, addVideo, sessions, updateLiveStream } = useEduPulse();
+  const { dict, videos, addVideo, sessions, updateLiveStream, showToast } = useEduPulse();
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [previewVideo, setPreviewVideo] = useState<RecordedVideo | null>(null);
 
-  // Live Stream Controls
-  const [selectedSessionId, setSelectedSessionId] = useState(sessions[0]?.id || '');
-  const [meetingUrl, setMeetingUrl] = useState('https://meet.google.com/abc-defg-hij');
-  const [isLiveActive, setIsLiveActive] = useState(false);
+  // Live Stream Controls State
+  const [selectedSessionId, setSelectedSessionId] = useState<string>(sessions[0]?.id || '');
+  const [meetingUrl, setMeetingUrl] = useState<string>('');
+
+  // Sync selected session's live URL whenever selection or sessions array changes
+  const selectedSession = sessions.find((s) => s.id === selectedSessionId);
+  const isLiveActive = selectedSession?.isLive || false;
+
+  useEffect(() => {
+    if (selectedSession) {
+      setMeetingUrl(selectedSession.liveMeetingUrl || '');
+    }
+  }, [selectedSessionId, sessions]);
 
   // New Video Form State
   const [title, setTitle] = useState('');
@@ -40,11 +77,60 @@ export default function AdminVideosPage() {
   const [duration, setDuration] = useState('01:30:00');
   const [description, setDescription] = useState('');
 
-  const handleToggleLive = () => {
-    if (!selectedSessionId) return;
-    const nextStatus = !isLiveActive;
-    setIsLiveActive(nextStatus);
-    updateLiveStream(selectedSessionId, nextStatus, meetingUrl);
+  // Start Live Stream & Open Meeting URL in New Tab
+  const handleStartLiveStream = (openInNewTab = true) => {
+    // 1. Verify lecture selected
+    if (!selectedSessionId || !selectedSession) {
+      showToast('يرجى اختيار المحاضرة أولاً', 'error');
+      return;
+    }
+
+    // 2. Retrieve & Validate URL
+    const urlToValidate = meetingUrl || selectedSession.liveMeetingUrl || '';
+    if (!urlToValidate.trim()) {
+      showToast('لا يوجد رابط بث مباشر لهذه المحاضرة', 'error');
+      return;
+    }
+
+    const validUrl = normalizeAndValidateUrl(urlToValidate);
+    if (!validUrl) {
+      showToast('رابط البث المباشر غير صالح', 'error');
+      return;
+    }
+
+    // 3. Update session state & LocalStorage
+    updateLiveStream(selectedSessionId, true, validUrl);
+
+    // 4. Open meeting link in new tab safely
+    if (openInNewTab) {
+      window.open(validUrl, '_blank', 'noopener,noreferrer');
+    }
+  };
+
+  // Stop Live Stream
+  const handleStopLiveStream = () => {
+    if (!selectedSessionId || !selectedSession) {
+      showToast('يرجى اختيار المحاضرة أولاً', 'error');
+      return;
+    }
+
+    updateLiveStream(selectedSessionId, false, meetingUrl);
+  };
+
+  // Open Live Meeting Link directly without toggling status
+  const handleOpenLinkDirectly = () => {
+    if (!selectedSessionId || !selectedSession) {
+      showToast('يرجى اختيار المحاضرة أولاً', 'error');
+      return;
+    }
+
+    const validUrl = normalizeAndValidateUrl(meetingUrl || selectedSession.liveMeetingUrl || '');
+    if (!validUrl) {
+      showToast('رابط البث المباشر غير صالح', 'error');
+      return;
+    }
+
+    window.open(validUrl, '_blank', 'noopener,noreferrer');
   };
 
   const handleSaveVideo = (e: React.FormEvent) => {
@@ -77,10 +163,11 @@ export default function AdminVideosPage() {
             <Video className="w-7 h-7 text-rose-500" />
             <span>تسجيلات المحاضرات والبث المباشر</span>
           </h1>
-          <p className="text-xs text-slate-400 mt-1">إدارة غرف البث المباشر رفع تسجيلة الفيديوهات والدروس للطلاب</p>
+          <p className="text-xs text-slate-400 mt-1">إدارة غرف البث المباشر ورفع تسجيلة الفيديوهات والدروس للطلاب</p>
         </div>
 
         <button
+          type="button"
           onClick={() => setIsAddModalOpen(true)}
           className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white font-bold text-xs shadow-lg shadow-rose-500/20 flex items-center gap-2 shrink-0 transition"
         >
@@ -113,17 +200,37 @@ export default function AdminVideosPage() {
             </div>
           </div>
 
-          <button
-            onClick={handleToggleLive}
-            className={`px-5 py-2.5 rounded-xl font-extrabold text-xs shadow-xl transition flex items-center gap-2 shrink-0 ${
-              isLiveActive
-                ? 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700'
-                : 'bg-rose-600 hover:bg-rose-500 text-white shadow-rose-500/30'
-            }`}
-          >
-            <Radio className="w-4 h-4" />
-            <span>{isLiveActive ? 'إنهاء البث المباشر' : 'بدء البث المباشر الآن 🔴'}</span>
-          </button>
+          {/* Action Buttons */}
+          <div className="flex items-center gap-2">
+            {isLiveActive ? (
+              <button
+                type="button"
+                onClick={handleStopLiveStream}
+                className="px-4 py-2.5 rounded-xl font-extrabold text-xs shadow-xl transition flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700"
+              >
+                <Square className="w-4 h-4 text-rose-400" />
+                <span>إنهاء البث المباشر</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => handleStartLiveStream(true)}
+                className="px-5 py-2.5 rounded-xl font-extrabold text-xs shadow-xl transition flex items-center gap-2 bg-rose-600 hover:bg-rose-500 text-white shadow-rose-500/30"
+              >
+                <Radio className="w-4 h-4" />
+                <span>بدء البث المباشر الآن 🔴</span>
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={handleOpenLinkDirectly}
+              className="p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 transition"
+              title="فتح رابط البث في تبويب جديد"
+            >
+              <ExternalLink className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-semibold">
@@ -132,26 +239,30 @@ export default function AdminVideosPage() {
             <select
               value={selectedSessionId}
               onChange={(e) => setSelectedSessionId(e.target.value)}
-              className="w-full p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white"
+              className="w-full p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white cursor-pointer focus:border-rose-500 focus:outline-none"
             >
-              {sessions.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.title} ({s.date})
-                </option>
-              ))}
+              {sessions.length === 0 ? (
+                <option value="">لا توجد محاضرات مضافة بعد</option>
+              ) : (
+                sessions.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.title} ({s.date}) {s.isLive ? '🔴' : ''}
+                  </option>
+                ))
+              )}
             </select>
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-slate-300">رابط بث الغرفة (Google Meet / Zoom / YouTube Live)</label>
+            <label className="text-slate-300">رابط بث الغرفة (Zoom / Google Meet / YouTube Live)</label>
             <div className="relative">
               <Link2 className="w-4 h-4 text-slate-500 absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 value={meetingUrl}
                 onChange={(e) => setMeetingUrl(e.target.value)}
-                placeholder="https://meet.google.com/..."
-                className="w-full ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white font-mono"
+                placeholder="مثال: https://meet.google.com/abc-defg-hij أو zoom.us/j/123456"
+                className="w-full ltr:pl-9 rtl:pr-9 ltr:pr-3 rtl:pl-3 p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white font-mono focus:border-rose-500 focus:outline-none"
               />
             </div>
           </div>
@@ -174,6 +285,7 @@ export default function AdminVideosPage() {
                   <img src={vid.thumbnailUrl} alt={vid.title} className="w-full h-full object-cover group-hover:scale-105 transition duration-300" />
                   <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-90 group-hover:opacity-100 transition">
                     <button
+                      type="button"
                       onClick={() => setPreviewVideo(vid)}
                       className="w-12 h-12 rounded-2xl bg-rose-600/90 text-white flex items-center justify-center shadow-xl glow-rose transform group-hover:scale-110 transition"
                     >
@@ -199,6 +311,7 @@ export default function AdminVideosPage() {
                 </span>
 
                 <button
+                  type="button"
                   onClick={() => setPreviewVideo(vid)}
                   className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-rose-300 font-bold text-xs flex items-center gap-1 transition"
                 >
@@ -223,7 +336,7 @@ export default function AdminVideosPage() {
             >
               <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                 <h3 className="text-base font-extrabold text-white">رفع ونشر تسجيل فيديو محتوى مادة</h3>
-                <button onClick={() => setIsAddModalOpen(false)} className="p-1.5 text-slate-400 hover:text-white">
+                <button type="button" onClick={() => setIsAddModalOpen(false)} className="p-1.5 text-slate-400 hover:text-white">
                   <X className="w-5 h-5" />
                 </button>
               </div>
@@ -332,7 +445,7 @@ export default function AdminVideosPage() {
             >
               <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                 <h3 className="text-base font-extrabold">{previewVideo.title}</h3>
-                <button onClick={() => setPreviewVideo(null)} className="p-1.5 text-slate-400 hover:text-white">
+                <button type="button" onClick={() => setPreviewVideo(null)} className="p-1.5 text-slate-400 hover:text-white">
                   <X className="w-5 h-5" />
                 </button>
               </div>
