@@ -27,6 +27,7 @@ export interface Student {
   grade: string;
   attendanceRate: number; // percentage e.g. 92
   totalPoints: number;    // cumulative score
+  password?: string;      // Student password / PIN
   banDetails?: BanDetails;
   joinedDate: string;
 }
