@@ -118,7 +118,7 @@ function LoginFormContent() {
       router.refresh();
     } catch (err) {
       setError(language === 'ar' ? 'حدث خطأ أثناء الاتصال بالخادم' : 'Server connection error');
-    } flex {
+    } finally {
       setIsSubmitting(false);
     }
   };
