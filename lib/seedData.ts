@@ -342,6 +342,66 @@ export const initialQuizzes: Quiz[] = [
         points: 10
       }
     ]
+  },
+  {
+    id: 'quiz_g10_1',
+    title: 'اختبار الجبر والمعادلات - الصف الأول الثانوي (Grade 10)',
+    subject: 'الرياضيات',
+    grade: 'الصف الأول الثانوي (Grade 10)',
+    durationMinutes: 15,
+    scheduledStart: new Date(Date.now() - 3600000 * 24).toISOString(),
+    scheduledEnd: new Date(Date.now() + 3600000 * 72).toISOString(),
+    isOpen: true,
+    questions: [
+      {
+        id: 'q_g10_1',
+        text: 'إذا كان مميز المعادلة التربيعية س² - 6س + ك = 0 يقع في حقيقيين متساويين، فإن قيمة ك تساوي:',
+        type: 'mcq',
+        options: ['9', '6', '36', '-9'],
+        correctAnswer: 0,
+        explanation: 'المميز ب² - 4أ جـ = 0  =>  (-6)² - 4(1)(ك) = 0  =>  36 - 4ك = 0  =>  ك = 9.',
+        points: 5
+      },
+      {
+        id: 'q_g10_2',
+        text: 'مجموع قياسات الزوايا الداخلية للشكل الخماسي المنتظم تساوي 540 درجة.',
+        type: 'true_false',
+        options: ['صح (True)', 'خطأ (False)'],
+        correctAnswer: true,
+        explanation: 'قانون مجموع الزوايا (ن - 2) × 180 = (5 - 2) × 180 = 3 × 180 = 540 درجة.',
+        points: 5
+      },
+      {
+        id: 'q_g10_3',
+        text: 'إذا كانت جا(س) = 0.5 حيث س زاوية حادة، فإن قياس س بالدرجات يساوي:',
+        type: 'mcq',
+        options: ['30°', '45°', '60°', '90°'],
+        correctAnswer: 0,
+        explanation: 'جا(30°) = 0.5، وبالتالي الزاوية الحادة س = 30 درجة.',
+        points: 5
+      }
+    ]
+  },
+  {
+    id: 'quiz_g11_1',
+    title: 'اختبار حساب المثلثات والجبر - الصف الثاني الثانوي (Grade 11)',
+    subject: 'الرياضيات',
+    grade: 'الصف الثاني الثانوي (Grade 11)',
+    durationMinutes: 15,
+    scheduledStart: new Date(Date.now() - 3600000 * 24).toISOString(),
+    scheduledEnd: new Date(Date.now() + 3600000 * 72).toISOString(),
+    isOpen: true,
+    questions: [
+      {
+        id: 'q_g11_1',
+        text: 'في أي مثلث أ ب جـ، أ / جا أ = ب / جا ب = 2 نق (حيث نق نصف قطر الدائرة المارة برؤوسه).',
+        type: 'true_false',
+        options: ['صح (True)', 'خطأ (False)'],
+        correctAnswer: true,
+        explanation: 'هذا هو قانون الجيب الأساسي لنسب أضلاع المثلث إلى جيب الزوايا المقابلة.',
+        points: 10
+      }
+    ]
   }
 ];
 

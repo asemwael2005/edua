@@ -45,7 +45,7 @@ export const Sidebar: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
   const studentLinks = [
     { href: '/student', label: dict.nav.dashboard, icon: LayoutDashboard },
     { href: '/student/videos', label: 'تسجيلات المحاضرات والبث', icon: Video },
-    { href: '/student/quizzes/quiz_1', label: dict.nav.quizzes, icon: FileCheck2 },
+    { href: '/student/quizzes', label: dict.nav.quizzes, icon: FileCheck2 },
     { href: '/student/assignments', label: dict.nav.assignments, icon: BookOpenCheck },
     { href: '/student/sessions/sess_1', label: 'المحاضرة التفاعلية (Slides)', icon: Tv },
     { href: '/student/scorecard', label: dict.nav.scorecard, icon: Trophy },

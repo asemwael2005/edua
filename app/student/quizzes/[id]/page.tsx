@@ -16,22 +16,34 @@ import {
   AlertTriangle,
   RotateCcw,
   Sparkles,
+  ArrowRight,
+  Check,
+  X,
+  BookOpen,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import Link from 'next/link';
 
 export default function InteractiveQuizPlayerPage() {
   const params = useParams();
   const router = useRouter();
-  const { dict, quizzes, activeStudent, submitQuiz, showToast } = useEduPulse();
+  const { dict, quizzes, activeStudent, students, submitQuiz, quizSubmissions } = useEduPulse();
+
+  const currentStudent = activeStudent || students[0];
 
   const quizId = (params?.id as string) || 'quiz_1';
   const targetQuiz = quizzes.find((q) => q.id === quizId) || quizzes[0];
 
+  // Check if student already submitted this quiz before
+  const existingSubmission = quizSubmissions.find(
+    (s) => s.quizId === quizId && currentStudent && s.studentId === currentStudent.id
+  );
+
   const [currentQIndex, setCurrentQIndex] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<Record<string, number | boolean | null>>({});
   const [secondsLeft, setSecondsLeft] = useState((targetQuiz?.durationMinutes || 20) * 60);
-  const [isSubmitted, setIsSubmitted] = useState(false);
-  const [submissionResult, setSubmissionResult] = useState<any>(null);
+  const [isSubmitted, setIsSubmitted] = useState(!!existingSubmission);
+  const [submissionResult, setSubmissionResult] = useState<any>(existingSubmission || null);
 
   // Timer countdown effect
   useEffect(() => {
@@ -51,7 +63,7 @@ export default function InteractiveQuizPlayerPage() {
     return () => clearInterval(timer);
   }, [isSubmitted, secondsLeft]);
 
-  if (!activeStudent || !targetQuiz) return null;
+  if (!currentStudent || !targetQuiz) return null;
 
   const currentQuestion = targetQuiz.questions[currentQIndex];
 
@@ -85,7 +97,7 @@ export default function InteractiveQuizPlayerPage() {
 
     const result = {
       quizId: targetQuiz.id,
-      studentId: activeStudent.id,
+      studentId: currentStudent.id,
       answers: answersList,
       totalScore,
       maxScore,
@@ -102,14 +114,18 @@ export default function InteractiveQuizPlayerPage() {
   const seconds = secondsLeft % 60;
 
   return (
-    <BanShield student={activeStudent}>
+    <BanShield student={currentStudent}>
       <div className="max-w-4xl mx-auto space-y-6 pb-12">
         
         {/* Header Bar */}
         <div className="p-6 rounded-3xl glass-panel border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <span className="text-xs font-bold text-purple-400 font-mono">اختبار إلكتروني موقّت</span>
-            <h1 className="text-xl font-extrabold text-white">{targetQuiz.title}</h1>
+            <div className="flex items-center gap-2 text-xs font-bold text-purple-400 font-mono">
+              <Link href="/student/quizzes" className="hover:underline text-slate-400">الاختبارات</Link>
+              <span>/</span>
+              <span>{targetQuiz.grade}</span>
+            </div>
+            <h1 className="text-xl font-extrabold text-white mt-1">{targetQuiz.title}</h1>
           </div>
 
           {!isSubmitted && (
@@ -155,7 +171,7 @@ export default function InteractiveQuizPlayerPage() {
               key={currentQuestion.id}
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
-              className="p-8 rounded-3xl glass-panel border space-y-6 min-h-[320px] flex flex-col justify-between"
+              className="p-6 sm:p-8 rounded-3xl glass-panel border space-y-6 min-h-[340px] flex flex-col justify-between"
             >
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
@@ -181,12 +197,14 @@ export default function InteractiveQuizPlayerPage() {
                           onClick={() => handleSelectOption(currentQuestion.id, optIdx)}
                           className={`w-full p-4 rounded-2xl border text-right rtl:text-right ltr:text-left text-xs font-extrabold transition flex items-center justify-between ${
                             isSelected
-                              ? 'bg-purple-950/80 border-purple-500 text-purple-200 shadow-lg'
+                              ? 'bg-purple-950/90 border-purple-500 text-purple-200 shadow-lg ring-1 ring-purple-400'
                               : 'bg-slate-900/60 border-slate-800 text-slate-300 hover:bg-slate-800'
                           }`}
                         >
                           <span>{opt}</span>
-                          <span className="w-5 h-5 rounded-full border border-slate-700 flex items-center justify-center text-[10px] font-mono">
+                          <span className={`w-6 h-6 rounded-full border flex items-center justify-center text-[11px] font-mono font-bold ${
+                            isSelected ? 'bg-purple-600 border-purple-400 text-white' : 'border-slate-700 text-slate-400'
+                          }`}>
                             {['أ', 'ب', 'ج', 'د'][optIdx]}
                           </span>
                         </button>
@@ -202,7 +220,7 @@ export default function InteractiveQuizPlayerPage() {
                       onClick={() => handleSelectOption(currentQuestion.id, true)}
                       className={`p-4 rounded-2xl border text-center font-extrabold text-xs transition ${
                         selectedAnswers[currentQuestion.id] === true
-                          ? 'bg-emerald-950/80 border-emerald-500 text-emerald-300 shadow-lg'
+                          ? 'bg-emerald-950/90 border-emerald-500 text-emerald-300 shadow-lg ring-1 ring-emerald-400'
                           : 'bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800'
                       }`}
                     >
@@ -213,7 +231,7 @@ export default function InteractiveQuizPlayerPage() {
                       onClick={() => handleSelectOption(currentQuestion.id, false)}
                       className={`p-4 rounded-2xl border text-center font-extrabold text-xs transition ${
                         selectedAnswers[currentQuestion.id] === false
-                          ? 'bg-rose-950/80 border-rose-500 text-rose-300 shadow-lg'
+                          ? 'bg-rose-950/90 border-rose-500 text-rose-300 shadow-lg ring-1 ring-rose-400'
                           : 'bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800'
                       }`}
                     >
@@ -239,7 +257,7 @@ export default function InteractiveQuizPlayerPage() {
                     onClick={handleFinalSubmit}
                     className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-xs shadow-lg shadow-emerald-500/20 transition"
                   >
-                    تسليم الاختبار النهائي
+                    تسليم الاختبار المكتمل 🚀
                   </button>
                 ) : (
                   <button
@@ -254,56 +272,123 @@ export default function InteractiveQuizPlayerPage() {
             </motion.div>
           </div>
         ) : (
-          /* INSTANT RESULTS BREAKDOWN UI */
+          /* INSTANT RESULTS BREAKDOWN & DETAILED CORRECTIONS UI */
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="space-y-6">
             
             {/* Score Banner */}
             <div className="p-8 rounded-3xl bg-slate-900 border border-emerald-500/30 text-center space-y-4 shadow-2xl glow-emerald">
-              <div className="w-20 h-20 mx-auto rounded-3xl bg-emerald-950 border border-emerald-500/40 flex items-center justify-center text-emerald-400 text-3xl font-black font-mono">
-                {submissionResult.percentage}%
+              <div className="w-20 h-20 mx-auto rounded-3xl bg-emerald-950 border border-emerald-500/40 flex items-center justify-center text-emerald-400 text-3xl font-black font-mono shadow-inner">
+                {submissionResult?.percentage || 0}%
               </div>
 
               <div>
                 <h2 className="text-2xl font-black text-white">{dict.quizzes.scoreResult}</h2>
                 <p className="text-sm font-extrabold text-emerald-400 mt-1">
-                  {submissionResult.percentage >= 60 ? dict.quizzes.passed : dict.quizzes.failed}
+                  {(submissionResult?.percentage || 0) >= 60 ? 'ممتاز! لقد اجتزت الاختبار بنجاح 🎉' : 'لم تتجاوز نسبة النجاح المطلوب 🔄'}
                 </p>
               </div>
 
               <div className="inline-flex items-center gap-4 px-5 py-2 rounded-2xl bg-slate-950 border border-slate-800 text-xs font-mono font-bold text-slate-300">
-                <span>الدرجة: {submissionResult.totalScore} / {submissionResult.maxScore}</span>
-                <span>الوقت: {Math.round(submissionResult.timeSpentSeconds / 60)} دقيقة</span>
+                <span>الدرجة: {submissionResult?.totalScore || 0} / {submissionResult?.maxScore || 0}</span>
+                <span>•</span>
+                <span>الأسئلة الصحيحة: {submissionResult?.answers.filter((a: any) => a.isCorrect).length} من {targetQuiz.questions.length}</span>
               </div>
             </div>
 
             {/* Answer Breakdown Details */}
-            <div className="p-6 rounded-3xl glass-panel border space-y-4">
-              <h3 className="text-base font-extrabold text-white">{dict.quizzes.breakdownTitle}</h3>
+            <div className="p-6 sm:p-8 rounded-3xl glass-panel border space-y-6">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+                <h3 className="text-base font-extrabold text-white flex items-center gap-2">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                  <span>تفيصيل الإجابات والتصحيح النموذجي لكل سؤال 📊</span>
+                </h3>
 
-              <div className="space-y-4">
+                <Link
+                  href="/student/quizzes"
+                  className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-white transition flex items-center gap-1.5"
+                >
+                  <ArrowRight className="w-4 h-4 rtl:rotate-0 ltr:rotate-180" />
+                  <span>العودة للألعاب والاختبارات</span>
+                </Link>
+              </div>
+
+              <div className="space-y-6">
                 {targetQuiz.questions.map((q, idx) => {
-                  const ans = submissionResult.answers.find((a: any) => a.questionId === q.id);
+                  const ans = submissionResult?.answers.find((a: any) => a.questionId === q.id);
                   const isCorrect = ans?.isCorrect;
+                  const userChoice = ans?.selectedAnswer;
+
+                  // Get text representation of student selection vs correct choice
+                  let studentAnswerText = 'لم يجاوب الطالب';
+                  let correctAnswerText = '';
+
+                  if (q.type === 'mcq' && q.options) {
+                    correctAnswerText = q.options[Number(q.correctAnswer)] || '';
+                    if (typeof userChoice === 'number') {
+                      studentAnswerText = q.options[userChoice] || '';
+                    }
+                  } else if (q.type === 'true_false') {
+                    correctAnswerText = q.correctAnswer ? 'صح (True)' : 'خطأ (False)';
+                    if (typeof userChoice === 'boolean') {
+                      studentAnswerText = userChoice ? 'صح (True)' : 'خطأ (False)';
+                    }
+                  }
 
                   return (
                     <div
                       key={q.id}
-                      className={`p-4 rounded-2xl border space-y-2 text-xs font-semibold ${
-                        isCorrect ? 'bg-emerald-950/30 border-emerald-500/30' : 'bg-rose-950/30 border-rose-500/30'
+                      className={`p-6 rounded-3xl border space-y-4 text-xs font-semibold ${
+                        isCorrect
+                          ? 'bg-emerald-950/20 border-emerald-500/40 shadow-lg'
+                          : 'bg-rose-950/20 border-rose-500/40 shadow-lg'
                       }`}
                     >
-                      <div className="flex items-center justify-between">
-                        <span className="font-bold text-white">س {idx + 1}: {q.text}</span>
+                      {/* Question Header & Correctness Badge */}
+                      <div className="flex items-start justify-between gap-3 border-b border-slate-800/80 pb-3">
+                        <span className="font-extrabold text-sm text-white leading-relaxed">
+                          س {idx + 1}: {q.text}
+                        </span>
+
                         {isCorrect ? (
-                          <span className="px-2.5 py-0.5 rounded-lg bg-emerald-500/20 text-emerald-400 font-bold">إجابة صحيحة (+{q.points})</span>
+                          <span className="px-3 py-1 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold shrink-0 flex items-center gap-1">
+                            <Check className="w-4 h-4 text-emerald-400" />
+                            <span>إجابة صحيحة (+{q.points} ن)</span>
+                          </span>
                         ) : (
-                          <span className="px-2.5 py-0.5 rounded-lg bg-rose-500/20 text-rose-400 font-bold">إجابة خاطئة (0)</span>
+                          <span className="px-3 py-1 rounded-xl bg-rose-500/20 text-rose-300 border border-rose-500/40 font-bold shrink-0 flex items-center gap-1">
+                            <X className="w-4 h-4 text-rose-400" />
+                            <span>إجابة خاطئة (0 من {q.points} ن)</span>
+                          </span>
                         )}
                       </div>
 
-                      <p className="text-slate-300">
-                        {dict.quizzes.explanationLabel} <span className="text-brand-300">{q.explanation}</span>
-                      </p>
+                      {/* Choices Comparison Box */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 font-mono text-xs">
+                        {/* Student Selected Choice */}
+                        <div className={`p-3 rounded-2xl border ${
+                          isCorrect ? 'bg-emerald-950/40 border-emerald-500/30 text-emerald-200' : 'bg-rose-950/40 border-rose-500/30 text-rose-200'
+                        }`}>
+                          <span className="text-[10px] text-slate-400 block font-sans">إجابتك التي اخترتها:</span>
+                          <span className="font-bold text-sm mt-0.5 block">{studentAnswerText}</span>
+                        </div>
+
+                        {/* Correct Answer Choice */}
+                        <div className="p-3 rounded-2xl bg-emerald-950/60 border border-emerald-500/40 text-emerald-200">
+                          <span className="text-[10px] text-emerald-400 block font-sans">الإجابة الصحيحة النموذجية 🌟:</span>
+                          <span className="font-bold text-sm mt-0.5 block">{correctAnswerText}</span>
+                        </div>
+                      </div>
+
+                      {/* Solution Explanation */}
+                      {q.explanation && (
+                        <div className="p-4 rounded-2xl bg-slate-950 border border-brand-500/30 text-brand-200 space-y-1">
+                          <div className="flex items-center gap-1.5 text-brand-400 font-bold">
+                            <BookOpen className="w-4 h-4" />
+                            <span>💡 الشرح التفصيلي للحل وتفسير الإجابة:</span>
+                          </div>
+                          <p className="text-xs text-slate-300 leading-relaxed pt-1 font-sans">{q.explanation}</p>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
