@@ -75,6 +75,7 @@ interface EduPulseContextType {
   // Actions
   addStudent: (student: Omit<Student, 'id' | 'joinedDate' | 'attendanceRate' | 'totalPoints'>) => void;
   updateStudent: (student: Student) => void;
+  deleteStudent: (studentId: string) => void;
   applyBan: (studentId: string, banDetails: BanDetails) => void;
   liftBan: (studentId: string) => void;
   adjustGrade: (studentId: string, amount: number, type: 'bonus' | 'deduction', reason: string, adminName?: string) => void;
@@ -206,6 +207,23 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   }, []);
 
+  // Fetch server-stored students on mount
+  useEffect(() => {
+    fetch('/api/admin/students')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && Array.isArray(data.students) && data.students.length > 0) {
+          setStudents((prev) => {
+            const mergedMap = new Map<string, Student>();
+            data.students.forEach((s: Student) => mergedMap.set(s.id, s));
+            prev.forEach((s: Student) => mergedMap.set(s.id, s));
+            return Array.from(mergedMap.values());
+          });
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   // HTML Attributes sync (lang, dir, theme class)
   useEffect(() => {
     const root = document.documentElement;
@@ -290,6 +308,14 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const updated = [newStudent, ...students];
     setStudents(updated);
     saveState('students', updated);
+
+    // Sync to server-side store
+    fetch('/api/admin/students', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newStudent),
+    }).catch(() => {});
+
     showToast(language === 'ar' ? 'تمت إضافة الطالب بنجاح' : 'Student added successfully');
   };
 
@@ -297,7 +323,28 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const updated = students.map((s) => (s.id === updatedSt.id ? updatedSt : s));
     setStudents(updated);
     saveState('students', updated);
+
+    // Sync to server-side store
+    fetch('/api/admin/students', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updatedSt),
+    }).catch(() => {});
+
     showToast(language === 'ar' ? 'تم تحديث بيانات الطالب' : 'Student details updated');
+  };
+
+  const deleteStudent = (studentId: string) => {
+    const updated = students.filter((s) => s.id !== studentId);
+    setStudents(updated);
+    saveState('students', updated);
+
+    // Sync to server-side store
+    fetch(`/api/admin/students?id=${studentId}`, {
+      method: 'DELETE',
+    }).catch(() => {});
+
+    showToast(language === 'ar' ? 'تم حذف حساب الطالب نهائياً من المنصة' : 'Student deleted successfully', 'error');
   };
 
   const applyBan = (studentId: string, banDetails: BanDetails) => {
@@ -685,6 +732,7 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setActiveStudentId,
         addStudent,
         updateStudent,
+        deleteStudent,
         applyBan,
         liftBan,
         adjustGrade,

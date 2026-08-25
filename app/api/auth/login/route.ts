@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSessionToken, setSessionCookieInResponse } from '@/lib/auth';
 import { initialStudents } from '@/lib/seedData';
+import { getGlobalStudents } from '@/lib/serverStore';
 
 const SERVER_ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
 
@@ -46,10 +47,10 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // Combine seed students and client-managed students
-      const allStudents = Array.isArray(customStudents) && customStudents.length > 0
-        ? customStudents
-        : initialStudents;
+      // Combine server store students, client payload students, and initial seed students
+      const serverStudents = getGlobalStudents();
+      const clientStudents = Array.isArray(customStudents) ? customStudents : [];
+      const allStudents = [...serverStudents, ...clientStudents, ...initialStudents];
 
       const foundStudent = allStudents.find(
         (s: any) =>

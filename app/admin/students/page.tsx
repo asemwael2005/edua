@@ -13,6 +13,7 @@ import {
   Award,
   Edit,
   Eye,
+  Trash2,
   X,
   PlusCircle,
   MinusCircle,
@@ -20,6 +21,8 @@ import {
   Copy,
   Check,
   AlertCircle,
+  PauseCircle,
+  PlayCircle,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -36,6 +39,7 @@ export default function StudentsManagementPage() {
     students,
     addStudent,
     updateStudent,
+    deleteStudent,
     applyBan,
     liftBan,
     adjustGrade,
@@ -51,6 +55,7 @@ export default function StudentsManagementPage() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [banStudent, setBanStudent] = useState<Student | null>(null);
+  const [deleteTargetStudent, setDeleteTargetStudent] = useState<Student | null>(null);
   const [adjustStudent, setAdjustStudent] = useState<Student | null>(null);
   const [profileStudent, setProfileStudent] = useState<Student | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -111,6 +116,22 @@ export default function StudentsManagementPage() {
       res += chars.charAt(Math.floor(Math.random() * chars.length));
     }
     setFormData((prev) => ({ ...prev, password: res }));
+  };
+
+  // Quick Temporary Pause / Suspend Toggle
+  const toggleQuickPause = (st: Student) => {
+    if (st.banDetails?.active) {
+      liftBan(st.id);
+    } else {
+      const details: BanDetails = {
+        active: true,
+        type: 'temp',
+        startDate: new Date().toISOString(),
+        reason: 'تجميد حساب الطالب مؤقتاً من قِبل الإدارة',
+        appliedBy: 'إدارة المركز',
+      };
+      applyBan(st.id, details);
+    }
   };
 
   // Handle Add/Edit Submit
@@ -207,6 +228,13 @@ export default function StudentsManagementPage() {
     setBanReason('');
   };
 
+  // Handle Confirm Delete
+  const handleConfirmDelete = () => {
+    if (!deleteTargetStudent) return;
+    deleteStudent(deleteTargetStudent.id);
+    setDeleteTargetStudent(null);
+  };
+
   // Handle Grade Adjust Submit
   const handleAdjustSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -228,7 +256,7 @@ export default function StudentsManagementPage() {
             <Users className="w-7 h-7 text-brand-500" />
             <span>{dict.students.title}</span>
           </h1>
-          <p className="text-xs text-slate-400 mt-1">إدارة بيانات الطلاب، توليد أكواد الدخول، وتعديل كلمات المرور</p>
+          <p className="text-xs text-slate-400 mt-1">إدارة حسابات الطلاب، التوقيف المؤقت، التعديل، والحذف النهائى</p>
         </div>
 
         <button
@@ -307,7 +335,7 @@ export default function StudentsManagementPage() {
                 <th className="py-3.5 px-4">الطالب</th>
                 <th className="py-3.5 px-4">بيانات الحساب والسر 🔑</th>
                 <th className="py-3.5 px-4">{dict.students.grade}</th>
-                <th className="py-3.5 px-4">هاتف ولي الأمر (إجباري)</th>
+                <th className="py-3.5 px-4">هاتف ولي الأمر</th>
                 <th className="py-3.5 px-4">{dict.students.points}</th>
                 <th className="py-3.5 px-4">الحالة والضوابط</th>
                 <th className="py-3.5 px-4 text-center">{dict.students.actions}</th>
@@ -354,6 +382,7 @@ export default function StudentsManagementPage() {
                             <span className="text-[10px] text-slate-400 font-sans">كود:</span>
                             <span className="text-brand-400 font-bold">{st.id}</span>
                             <button
+                              type="button"
                               onClick={() => copyText(st.id, `id_${st.id}`)}
                               className="p-1 rounded text-slate-500 hover:text-white"
                               title="نسخ كود الطالب"
@@ -366,6 +395,7 @@ export default function StudentsManagementPage() {
                             <span className="text-[10px] text-slate-400 font-sans">السر:</span>
                             <span className="text-emerald-400 font-bold">{stPass}</span>
                             <button
+                              type="button"
                               onClick={() => copyText(stPass, `pass_${st.id}`)}
                               className="p-1 rounded text-slate-500 hover:text-white"
                               title="نسخ كلمة السر"
@@ -395,7 +425,7 @@ export default function StudentsManagementPage() {
                           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-rose-950/80 text-rose-300 border border-rose-500/40 text-[11px] font-bold">
                             <ShieldAlert className="w-3.5 h-3.5 text-rose-400" />
                             <span>
-                              {st.banDetails?.type === 'perm' ? 'محظور دائمياً' : 'محظور مؤقتاً'}
+                              {st.banDetails?.type === 'perm' ? 'محظور دائمياً' : 'موقوف مؤقتاً'}
                             </span>
                           </span>
                         ) : (
@@ -409,7 +439,23 @@ export default function StudentsManagementPage() {
                       {/* Action buttons */}
                       <td className="py-3.5 px-4">
                         <div className="flex items-center justify-center gap-1.5">
+                          {/* Quick Pause / Resume Toggle */}
                           <button
+                            type="button"
+                            onClick={() => toggleQuickPause(st)}
+                            title={isBanned ? 'إعادة تفعيل الحساب' : 'توقيف وتجميد الحساب مؤقتاً'}
+                            className={`p-2 rounded-xl transition ${
+                              isBanned
+                                ? 'bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30'
+                                : 'bg-amber-500/20 text-amber-400 hover:bg-amber-500/30'
+                            }`}
+                          >
+                            {isBanned ? <PlayCircle className="w-4 h-4" /> : <PauseCircle className="w-4 h-4" />}
+                          </button>
+
+                          {/* Grade Adjust */}
+                          <button
+                            type="button"
                             onClick={() => setAdjustStudent(st)}
                             title={dict.students.adjustGrade}
                             className="p-2 rounded-xl bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 transition"
@@ -417,19 +463,19 @@ export default function StudentsManagementPage() {
                             <Award className="w-4 h-4" />
                           </button>
 
+                          {/* Ban Control */}
                           <button
+                            type="button"
                             onClick={() => setBanStudent(st)}
-                            title={dict.students.manageBan}
-                            className={`p-2 rounded-xl transition ${
-                              isBanned
-                                ? 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20'
-                                : 'bg-rose-500/10 text-rose-400 hover:bg-rose-500/20'
-                            }`}
+                            title="إعدادات الحظر المتقدمة"
+                            className="p-2 rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-700 transition"
                           >
                             <ShieldAlert className="w-4 h-4" />
                           </button>
 
+                          {/* Full Profile */}
                           <button
+                            type="button"
                             onClick={() => setProfileStudent(st)}
                             title={dict.students.viewProfile}
                             className="p-2 rounded-xl bg-brand-500/10 text-brand-400 hover:bg-brand-500/20 transition"
@@ -437,12 +483,24 @@ export default function StudentsManagementPage() {
                             <Eye className="w-4 h-4" />
                           </button>
 
+                          {/* Edit Details */}
                           <button
+                            type="button"
                             onClick={() => openEdit(st)}
                             title={dict.students.editStudentTitle}
                             className="p-2 rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-700 transition"
                           >
                             <Edit className="w-4 h-4" />
+                          </button>
+
+                          {/* Delete Student Account */}
+                          <button
+                            type="button"
+                            onClick={() => setDeleteTargetStudent(st)}
+                            title="مسح وحذف حساب الطالب نهائياً"
+                            className="p-2 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 transition"
+                          >
+                            <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
                       </td>
@@ -471,6 +529,7 @@ export default function StudentsManagementPage() {
                   {editingStudent ? dict.students.editStudentTitle : 'إضافة حساب طالب جديد 🔑'}
                 </h3>
                 <button
+                  type="button"
                   onClick={() => {
                     setIsAddModalOpen(false);
                     setEditingStudent(null);
@@ -606,6 +665,288 @@ export default function StudentsManagementPage() {
         )}
       </AnimatePresence>
 
+      {/* --- MODAL 2: DELETE STUDENT CONFIRMATION MODAL --- */}
+      <AnimatePresence>
+        {deleteTargetStudent && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="max-w-md w-full p-6 rounded-3xl bg-slate-900 border border-rose-500/40 shadow-2xl space-y-5 text-center glow-rose"
+            >
+              <div className="w-14 h-14 mx-auto rounded-2xl bg-rose-500/20 text-rose-400 flex items-center justify-center">
+                <Trash2 className="w-7 h-7" />
+              </div>
+
+              <div>
+                <h3 className="text-lg font-extrabold text-white">تأكيد مسح وحذف حساب الطالب</h3>
+                <p className="text-xs text-slate-300 mt-2">
+                  هل أنت محقق من إرادة مسح حساب الطالب <strong className="text-rose-400 font-bold">{deleteTargetStudent.name}</strong> ({deleteTargetStudent.id}) نهائياً من المنصة والسيرفر؟
+                </p>
+                <p className="text-[11px] text-rose-400/80 mt-1 font-semibold">تنبيه: لا يمكن التراجع عن هذا الإجراء بعد الحذف.</p>
+              </div>
+
+              <div className="flex items-center justify-center gap-3 pt-3 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setDeleteTargetStudent(null)}
+                  className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs"
+                >
+                  إلغاء
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmDelete}
+                  className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shadow-lg shadow-rose-500/30"
+                >
+                  نعم، مسح الحساب نهائياً 🗑️
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* --- MODAL 3: BAN ENGINE MODAL --- */}
+      <AnimatePresence>
+        {banStudent && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="max-w-lg w-full p-6 rounded-3xl bg-slate-900 border border-rose-500/30 shadow-2xl space-y-5 glow-rose"
+            >
+              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div className="flex items-center gap-2 text-rose-500 font-extrabold text-base">
+                  <ShieldAlert className="w-5 h-5" />
+                  <span>إعدادات حظر وتوقيف الحساب المتقدمة</span>
+                </div>
+                <button type="button" onClick={() => setBanStudent(null)} className="p-1.5 text-slate-400 hover:text-white">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Target Student Info */}
+              <div className="p-3 rounded-2xl bg-slate-950 border border-slate-800 flex items-center gap-3">
+                <img src={banStudent.avatar} alt={banStudent.name} className="w-10 h-10 rounded-xl object-cover" />
+                <div>
+                  <h4 className="text-sm font-bold text-white">{banStudent.name}</h4>
+                  <span className="text-xs text-slate-400">{banStudent.grade}</span>
+                </div>
+              </div>
+
+              {/* If already banned, offer revoke option */}
+              {banStudent.banDetails?.active && (
+                <div className="p-3.5 rounded-2xl bg-rose-950/40 border border-rose-500/30 space-y-2">
+                  <div className="text-xs font-bold text-rose-300">
+                    الحظر مفعّل حالياً: {banStudent.banDetails.type === 'perm' ? 'دائم' : 'مؤقت'}
+                  </div>
+                  <p className="text-xs text-slate-300">السبب: {banStudent.banDetails.reason}</p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      liftBan(banStudent.id);
+                      setBanStudent(null);
+                    }}
+                    className="w-full py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-lg transition mt-2"
+                  >
+                    إلغاء التوقيف وإعادة تفعيل الحساب ▶
+                  </button>
+                </div>
+              )}
+
+              {/* Form to Apply New Ban */}
+              <form onSubmit={handleApplyBan} className="space-y-4 text-xs font-semibold">
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setBanType('temp')}
+                    className={`p-3 rounded-2xl border text-center font-bold transition ${
+                      banType === 'temp'
+                        ? 'bg-amber-500/20 border-amber-500 text-amber-300'
+                        : 'bg-slate-950 border-slate-800 text-slate-400'
+                    }`}
+                  >
+                    توقيف مؤقت ⏸
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setBanType('perm')}
+                    className={`p-3 rounded-2xl border text-center font-bold transition ${
+                      banType === 'perm'
+                        ? 'bg-rose-500/20 border-rose-500 text-rose-300'
+                        : 'bg-slate-950 border-slate-800 text-slate-400'
+                    }`}
+                  >
+                    حظر دائم ⛔
+                  </button>
+                </div>
+
+                {banType === 'temp' && (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-slate-300">{dict.banEngine.startDate}</label>
+                      <input
+                        type="datetime-local"
+                        value={banStartDate}
+                        onChange={(e) => setBanStartDate(e.target.value)}
+                        className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white focus:outline-none focus:border-brand-500 font-mono"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-slate-300">{dict.banEngine.endDate}</label>
+                      <input
+                        type="datetime-local"
+                        value={banEndDate}
+                        onChange={(e) => setBanEndDate(e.target.value)}
+                        className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white focus:outline-none focus:border-brand-500 font-mono"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                <div className="space-y-1">
+                  <label className="text-slate-300">{dict.banEngine.reason}</label>
+                  <textarea
+                    required
+                    rows={3}
+                    value={banReason}
+                    onChange={(e) => setBanReason(e.target.value)}
+                    placeholder={dict.banEngine.reasonPlaceholder}
+                    className="w-full p-3 rounded-xl bg-slate-950 border border-slate-800 text-white focus:outline-none focus:border-rose-500"
+                  />
+                </div>
+
+                <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+                  <button
+                    type="button"
+                    onClick={() => setBanStudent(null)}
+                    className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 font-bold"
+                  >
+                    إلغاء
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold shadow-lg shadow-rose-500/20"
+                  >
+                    تأكيد التوقيف
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* --- MODAL 4: GRADE ADJUSTMENT MODAL --- */}
+      <AnimatePresence>
+        {adjustStudent && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="max-w-md w-full p-6 rounded-3xl bg-slate-900 border border-amber-500/30 shadow-2xl space-y-5 glow-indigo"
+            >
+              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div className="flex items-center gap-2 text-amber-400 font-extrabold text-base">
+                  <Award className="w-5 h-5" />
+                  <span>{dict.gradeAdjust.title}</span>
+                </div>
+                <button type="button" onClick={() => setAdjustStudent(null)} className="p-1.5 text-slate-400 hover:text-white">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="p-3 rounded-2xl bg-slate-950 border border-slate-800 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <img src={adjustStudent.avatar} alt={adjustStudent.name} className="w-10 h-10 rounded-xl object-cover" />
+                  <div>
+                    <h4 className="text-sm font-bold text-white">{adjustStudent.name}</h4>
+                    <span className="text-xs text-slate-400">{adjustStudent.grade}</span>
+                  </div>
+                </div>
+                <span className="text-sm font-black text-amber-400 font-mono">{adjustStudent.totalPoints} نقطة</span>
+              </div>
+
+              <form onSubmit={handleAdjustSubmit} className="space-y-4 text-xs font-semibold">
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setAdjustType('bonus')}
+                    className={`p-3 rounded-2xl border flex items-center justify-center gap-2 font-bold transition ${
+                      adjustType === 'bonus'
+                        ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300'
+                        : 'bg-slate-950 border-slate-800 text-slate-400'
+                    }`}
+                  >
+                    <PlusCircle className="w-4 h-4 text-emerald-400" />
+                    <span>{dict.gradeAdjust.bonus}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setAdjustType('deduction')}
+                    className={`p-3 rounded-2xl border flex items-center justify-center gap-2 font-bold transition ${
+                      adjustType === 'deduction'
+                        ? 'bg-rose-500/20 border-rose-500 text-rose-300'
+                        : 'bg-slate-950 border-slate-800 text-slate-400'
+                    }`}
+                  >
+                    <MinusCircle className="w-4 h-4 text-rose-400" />
+                    <span>{dict.gradeAdjust.deduction}</span>
+                  </button>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-slate-300">{dict.gradeAdjust.amount}</label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={100}
+                    value={adjustAmount}
+                    onChange={(e) => setAdjustAmount(Number(e.target.value))}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white font-mono font-bold focus:outline-none focus:border-amber-500"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-slate-300">{dict.gradeAdjust.reason}</label>
+                  <textarea
+                    required
+                    rows={3}
+                    value={adjustReason}
+                    onChange={(e) => setAdjustReason(e.target.value)}
+                    placeholder={dict.gradeAdjust.reasonPlaceholder}
+                    className="w-full p-3 rounded-xl bg-slate-950 border border-slate-800 text-white focus:outline-none focus:border-amber-500"
+                  />
+                </div>
+
+                <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+                  <button
+                    type="button"
+                    onClick={() => setAdjustStudent(null)}
+                    className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 font-bold"
+                  >
+                    إلغاء
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold shadow-lg shadow-amber-500/20"
+                  >
+                    {dict.gradeAdjust.submit}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       {/* Profile Drawer */}
       <AnimatePresence>
         {profileStudent && (
@@ -634,7 +975,7 @@ export default function StudentsManagementPage() {
                     </div>
                   </div>
                 </div>
-                <button onClick={() => setProfileStudent(null)} className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700">
+                <button type="button" onClick={() => setProfileStudent(null)} className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700">
                   <X className="w-5 h-5" />
                 </button>
               </div>
