@@ -7,11 +7,14 @@ import {
   Sun,
   Moon,
   ShieldCheck,
+  ShieldAlert,
   GraduationCap,
   RotateCcw,
   UserCheck,
   Menu,
   Sparkles,
+  LogOut,
+  Lock,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -29,6 +32,8 @@ export const Header: React.FC<{ onToggleSidebar?: () => void }> = ({ onToggleSid
     activeStudent,
     dict,
     resetToDefaultData,
+    isAdminAuthenticated,
+    logoutAdmin,
   } = useEduPulse();
 
   return (
@@ -60,39 +65,35 @@ export const Header: React.FC<{ onToggleSidebar?: () => void }> = ({ onToggleSid
           </Link>
         </div>
 
-        {/* Center: Quick Switch Role Pill */}
-        <div className="hidden lg:flex items-center gap-2 bg-slate-200/60 dark:bg-slate-900/80 p-1.5 rounded-2xl border border-slate-300 dark:border-slate-800">
-          <Link
-            href="/admin"
-            onClick={() => setUserRole('admin')}
-            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
-              userRole === 'admin'
-                ? 'bg-gradient-to-r from-brand-600 to-brand-700 text-white shadow-md'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            <ShieldCheck className="w-4 h-4" />
-            <span>{dict.nav.adminPortal}</span>
-          </Link>
-
-          <Link
-            href="/student"
-            onClick={() => setUserRole('student')}
-            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
-              userRole === 'student'
-                ? 'bg-gradient-to-r from-accent-emerald to-emerald-600 text-white shadow-md'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            <GraduationCap className="w-4 h-4" />
-            <span>{dict.nav.studentPortal}</span>
-          </Link>
+        {/* Admin Protection Badge or Locked Access */}
+        <div className="hidden lg:flex items-center gap-2">
+          {isAdminAuthenticated ? (
+            <div className="flex items-center gap-2 bg-brand-950/80 border border-brand-500/40 px-3 py-1.5 rounded-2xl text-xs font-extrabold text-brand-300">
+              <ShieldCheck className="w-4 h-4 text-brand-400" />
+              <span>إدارة المركز مفعّلة</span>
+              <button
+                onClick={logoutAdmin}
+                className="ltr:ml-2 rtl:mr-2 p-1 rounded-lg bg-rose-500/20 hover:bg-rose-500/40 text-rose-300 transition"
+                title="قفل صلاحيات الإدارة وتسجيل الخروج"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          ) : (
+            <Link
+              href="/admin"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-xs font-bold text-slate-300 transition"
+            >
+              <Lock className="w-3.5 h-3.5 text-amber-400" />
+              <span>لوحة الإدارة 🔒</span>
+            </Link>
+          )}
         </div>
 
         {/* Controls Right */}
         <div className="flex items-center gap-2.5">
 
-          {/* Student Quick Account Selector (for testing student ban/portal) */}
+          {/* Student Quick Account Selector */}
           {userRole === 'student' && (
             <div className="flex items-center gap-1.5 bg-emerald-950/30 border border-emerald-500/30 rounded-xl px-2.5 py-1">
               <UserCheck className="w-4 h-4 text-emerald-400 shrink-0" />
@@ -110,7 +111,7 @@ export const Header: React.FC<{ onToggleSidebar?: () => void }> = ({ onToggleSid
             </div>
           )}
 
-          {/* Login / Logout */}
+          {/* Login Link */}
           <Link
             href="/login"
             className="p-2 rounded-xl border border-slate-300 dark:border-slate-800 bg-slate-100/50 dark:bg-slate-900/50 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-bold transition flex items-center gap-1.5"

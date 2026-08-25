@@ -38,6 +38,13 @@ interface EduPulseContextType {
   activeStudent: Student | undefined;
   dict: typeof dictionary['ar'];
   
+  // Admin Authentication Security
+  isAdminAuthenticated: boolean;
+  adminPassword: string;
+  loginAdmin: (password: string) => boolean;
+  logoutAdmin: () => void;
+  changeAdminPassword: (newPass: string) => void;
+
   students: Student[];
   sessions: Session[];
   quizzes: Quiz[];
@@ -86,8 +93,12 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   // Config state
   const [language, setLanguageState] = useState<Language>('ar');
   const [theme, setThemeState] = useState<Theme>('dark');
-  const [userRole, setUserRoleState] = useState<UserRole>('admin');
+  const [userRole, setUserRoleState] = useState<UserRole>('student'); // default to student for security!
   const [activeStudentId, setActiveStudentIdState] = useState<string>('std_2');
+
+  // Admin Auth Security State
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(false);
+  const [adminPassword, setAdminPasswordState] = useState<string>('admin123');
 
   // Data state
   const [students, setStudents] = useState<Student[]>(initialStudents);
@@ -123,6 +134,12 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
       const savedRole = localStorage.getItem(`${STORAGE_PREFIX}role`) as UserRole;
       if (savedRole) setUserRoleState(savedRole);
+
+      const savedAdminAuth = localStorage.getItem(`${STORAGE_PREFIX}adminAuth`);
+      if (savedAdminAuth === 'true') setIsAdminAuthenticated(true);
+
+      const savedAdminPass = localStorage.getItem(`${STORAGE_PREFIX}adminPass`);
+      if (savedAdminPass) setAdminPasswordState(savedAdminPass);
 
       const savedActiveStudent = localStorage.getItem(`${STORAGE_PREFIX}activeStudent`);
       if (savedActiveStudent) setActiveStudentIdState(savedActiveStudent);
@@ -198,6 +215,36 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const setActiveStudentId = (id: string) => {
     setActiveStudentIdState(id);
     saveState('activeStudent', id);
+  };
+
+  // Admin Auth Security Actions
+  const loginAdmin = (pass: string): boolean => {
+    if (pass === adminPassword) {
+      setIsAdminAuthenticated(true);
+      setUserRoleState('admin');
+      saveState('adminAuth', 'true');
+      saveState('role', 'admin');
+      showToast(language === 'ar' ? 'تم تسجيل دخول الإدارة بنجاح' : 'Admin logged in successfully');
+      return true;
+    } else {
+      showToast(language === 'ar' ? 'كلمة سر الإدارة غير صحيحة' : 'Invalid admin password', 'error');
+      return false;
+    }
+  };
+
+  const logoutAdmin = () => {
+    setIsAdminAuthenticated(false);
+    setUserRoleState('student');
+    saveState('adminAuth', 'false');
+    saveState('role', 'student');
+    showToast(language === 'ar' ? 'تم تسجيل خروج الإدارة وقفل الصلاحيات' : 'Admin logged out & locked');
+  };
+
+  const changeAdminPassword = (newPass: string) => {
+    if (!newPass || newPass.length < 4) return;
+    setAdminPasswordState(newPass);
+    saveState('adminPass', newPass);
+    showToast(language === 'ar' ? 'تم تغيير كلمة سر الإدارة بنجاح' : 'Admin password updated');
   };
 
   // Actions
@@ -514,6 +561,11 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         activeStudentId,
         activeStudent,
         dict,
+        isAdminAuthenticated,
+        adminPassword,
+        loginAdmin,
+        logoutAdmin,
+        changeAdminPassword,
         students,
         sessions,
         quizzes,
