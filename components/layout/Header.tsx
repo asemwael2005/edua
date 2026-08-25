@@ -95,21 +95,11 @@ export const Header: React.FC<{ onToggleSidebar?: () => void }> = ({ onToggleSid
         {/* Controls Right */}
         <div className="flex items-center gap-2.5">
 
-          {/* Student Quick Account Selector */}
-          {userRole === 'student' && !pathname.startsWith('/admin') && (
-            <div className="flex items-center gap-1.5 bg-emerald-950/30 border border-emerald-500/30 rounded-xl px-2.5 py-1">
+          {/* Active Student Badge */}
+          {userRole === 'student' && activeStudent && !pathname.startsWith('/admin') && (
+            <div className="flex items-center gap-2 bg-emerald-950/40 border border-emerald-500/30 rounded-2xl px-3 py-1.5 text-xs font-bold text-emerald-300">
               <UserCheck className="w-4 h-4 text-emerald-400 shrink-0" />
-              <select
-                value={activeStudentId}
-                onChange={(e) => setActiveStudentId(e.target.value)}
-                className="bg-transparent text-xs text-emerald-300 font-semibold focus:outline-none cursor-pointer max-w-[140px] sm:max-w-[180px] truncate"
-              >
-                {students.map((s) => (
-                  <option key={s.id} value={s.id} className="bg-slate-900 text-white">
-                    {s.name} {s.banDetails?.active ? '(محظور 🚫)' : ''}
-                  </option>
-                ))}
-              </select>
+              <span className="max-w-[120px] sm:max-w-[160px] truncate">{activeStudent.name}</span>
             </div>
           )}
 
