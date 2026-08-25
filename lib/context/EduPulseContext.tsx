@@ -14,6 +14,8 @@ import {
   QuizSubmission,
   AttendanceStatus,
   BanDetails,
+  RecordedVideo,
+  AdminUser,
 } from '@/types/edupulse';
 import {
   initialStudents,
@@ -42,9 +44,11 @@ interface EduPulseContextType {
   // Admin Authentication Security
   isAdminAuthenticated: boolean;
   adminPassword: string;
+  adminUsers: AdminUser[];
   loginAdmin: (password: string) => boolean;
   logoutAdmin: () => void;
   changeAdminPassword: (newPass: string) => void;
+  addAdminUser: (admin: Omit<AdminUser, 'id' | 'createdAt'>) => void;
 
   students: Student[];
   sessions: Session[];
@@ -105,6 +109,27 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   // Admin Auth Security State
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(false);
   const [adminPassword, setAdminPasswordState] = useState<string>('admin123');
+  const [adminUsers, setAdminUsers] = useState<AdminUser[]>([
+    {
+      id: 'adm_1',
+      name: 'الأستاذ عاصم وائل (Master Admin)',
+      email: 'admin@edupulse.edu',
+      role: 'master_admin',
+      createdAt: '2025-09-01',
+    },
+  ]);
+
+  const addAdminUser = (admData: Omit<AdminUser, 'id' | 'createdAt'>) => {
+    const newAdmin: AdminUser = {
+      ...admData,
+      id: `adm_${Date.now()}`,
+      createdAt: new Date().toISOString().split('T')[0],
+    };
+    const updated = [newAdmin, ...adminUsers];
+    setAdminUsers(updated);
+    saveState('admin_users', updated);
+    showToast(language === 'ar' ? 'تمت إضافة المسؤول/المساعد بنجاح' : 'Co-admin added successfully');
+  };
 
   // Data state
   const [students, setStudents] = useState<Student[]>(initialStudents);
@@ -636,9 +661,11 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         dict,
         isAdminAuthenticated,
         adminPassword,
+        adminUsers,
         loginAdmin,
         logoutAdmin,
         changeAdminPassword,
+        addAdminUser,
         students,
         sessions,
         quizzes,

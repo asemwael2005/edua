@@ -9,6 +9,14 @@ export interface BanDetails {
   appliedBy: string;
 }
 
+export interface AdminUser {
+  id: string;
+  name: string;
+  email: string;
+  role: 'master_admin' | 'assistant';
+  createdAt: string;
+}
+
 export interface Student {
   id: string;
   name: string;

@@ -35,6 +35,7 @@ export const Sidebar: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
     { href: '/admin/assignments', label: dict.nav.assignments, icon: BookOpenCheck },
     { href: '/admin/curriculum', label: dict.nav.curriculum, icon: Map },
     { href: '/admin/feedback', label: dict.nav.feedback, icon: MessageSquareHeart },
+    { href: '/admin/settings', label: 'إعدادات الأمان والمسؤولين', icon: ShieldCheck },
   ];
 
   const studentLinks = [
