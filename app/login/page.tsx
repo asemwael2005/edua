@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useEduPulse } from '@/lib/context/EduPulseContext';
 import {
   Sparkles,
@@ -12,56 +12,96 @@ import {
   ArrowRight,
   KeyRound,
   AlertCircle,
+  Loader2,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-export default function LoginPage() {
+function LoginFormContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { students, loginAdmin, setUserRole, setActiveStudentId, dict, language } = useEduPulse();
 
-  const [role, setRole] = useState<'student' | 'admin'>('student');
+  const redirectParam = searchParams.get('redirect');
+  const [role, setRole] = useState<'student' | 'admin'>('admin');
   const [studentCode, setStudentCode] = useState('');
   const [password, setPassword] = useState('');
   const [adminPasswordInput, setAdminPasswordInput] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  // Check if already authenticated on mount
+  useEffect(() => {
+    fetch('/api/auth/me')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && data.authenticated && data.user) {
+          const dest = redirectParam && redirectParam.startsWith('/')
+            ? decodeURIComponent(redirectParam)
+            : data.user.role === 'admin'
+            ? '/admin'
+            : '/student';
+          router.replace(dest);
+        }
+      })
+      .catch(() => {});
+  }, [redirectParam, router]);
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setIsSubmitting(true);
 
-    if (role === 'admin') {
-      const success = loginAdmin(adminPasswordInput);
-      if (success) {
-        router.push('/admin');
-      } else {
+    const rawRedirect = searchParams.get('redirect');
+    const destination =
+      rawRedirect && rawRedirect.startsWith('/')
+        ? decodeURIComponent(rawRedirect)
+        : role === 'admin'
+        ? '/admin'
+        : '/student';
+
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          role,
+          password: adminPasswordInput,
+          studentCode,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
         setError(
-          language === 'ar'
-            ? 'كلمة سر الإدارة غير صحيحة. يرجى إدخال كلمة سر الآدمن.'
-            : 'Invalid Admin Password.'
+          data.error ||
+            (role === 'admin'
+              ? language === 'ar'
+                ? 'كلمة سر الإدارة غير صحيحة.'
+                : 'Invalid Admin password.'
+              : language === 'ar'
+              ? 'كود الطالب أو كلمة المرور غير صحيحة.'
+              : 'Invalid student code or password.')
         );
+        setIsSubmitting(false);
+        return;
       }
-      return;
-    }
 
-    // Match student by email, phone, or name
-    const foundStudent = students.find(
-      (s) =>
-        s.email.toLowerCase().includes(studentCode.toLowerCase()) ||
-        s.studentPhone.includes(studentCode) ||
-        s.name.toLowerCase().includes(studentCode.toLowerCase()) ||
-        s.id.toLowerCase() === studentCode.toLowerCase()
-    );
+      // Sync Client Context State
+      if (role === 'admin') {
+        loginAdmin(adminPasswordInput);
+      } else {
+        setUserRole('student');
+        if (data.user?.id) setActiveStudentId(data.user.id);
+      }
 
-    if (foundStudent) {
-      setUserRole('student');
-      setActiveStudentId(foundStudent.id);
-      router.push('/student');
-    } else {
-      setError(
-        language === 'ar'
-          ? 'كود الطالب أو كلمة المرور غير صحيحة.'
-          : 'Invalid Student Code or password.'
-      );
+      // Perform Navigation to destination
+      router.replace(destination);
+      router.refresh();
+    } catch (err) {
+      setError(language === 'ar' ? 'حدث خطأ أثناء الإتصال بالخادم' : 'Server connection error');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -184,13 +224,40 @@ export default function LoginPage() {
 
           <button
             type="submit"
-            className="w-full py-3 rounded-xl bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 text-white font-extrabold text-sm shadow-xl shadow-brand-500/20 transition flex items-center justify-center gap-2"
+            disabled={isSubmitting}
+            className="w-full py-3 rounded-xl bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 text-white font-extrabold text-sm shadow-xl shadow-brand-500/20 transition flex items-center justify-center gap-2 disabled:opacity-50"
           >
-            <span>تأكيد ودخول الحساب</span>
-            <ArrowRight className="w-4 h-4 rtl:rotate-180" />
+            {isSubmitting ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>جاري الاتصال والتحقق...</span>
+              </>
+            ) : (
+              <>
+                <span>تأكيد ودخول الحساب</span>
+                <ArrowRight className="w-4 h-4 rtl:rotate-180" />
+              </>
+            )}
           </button>
         </form>
       </motion.div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-[70vh] flex items-center justify-center">
+          <div className="flex items-center gap-3 text-brand-500 font-bold">
+            <Loader2 className="w-6 h-6 animate-spin" />
+            <span>جاري تحميل صفحة الدخول...</span>
+          </div>
+        </div>
+      }
+    >
+      <LoginFormContent />
+    </Suspense>
   );
 }
