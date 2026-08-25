@@ -18,12 +18,11 @@ import {
   Tv,
   Video,
   ShieldCheck,
-  UserCheck,
 } from 'lucide-react';
 
 export const Sidebar: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
   const pathname = usePathname();
-  const { userRole, dict, activeStudent, language } = useEduPulse();
+  const { userRole, dict, activeStudent } = useEduPulse();
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   const isAdminRoute = pathname.startsWith('/admin');
@@ -64,19 +63,23 @@ export const Sidebar: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
 
       {/* Main Sidebar Container */}
       <aside
-        className={`fixed md:sticky top-16 z-40 h-[calc(100vh-4rem)] shrink-0 glass-panel border-x border-slate-200 dark:border-slate-800/80 flex flex-col justify-between p-3.5 transition-all duration-300 ${
+        className={`fixed md:sticky top-16 z-40 h-[calc(100vh-4rem)] shrink-0 glass-panel border-x border-slate-200 dark:border-slate-800/80 flex flex-col justify-between p-3.5 transition-all duration-300 ltr:left-0 rtl:right-0 md:ltr:left-auto md:rtl:right-auto ${
           isCollapsed ? 'md:w-20' : 'md:w-64'
         } ${
-          isOpen ? 'translate-x-0 w-64' : 'ltr:-translate-x-full rtl:translate-x-full md:translate-x-0'
+          isOpen
+            ? 'translate-x-0 w-64 shadow-2xl'
+            : 'ltr:-translate-x-full rtl:translate-x-full md:translate-x-0 w-64'
         }`}
       >
         <div className="space-y-5">
           
           {/* Active User Card & Desktop Toggle Button */}
           <div className="flex items-center justify-between gap-2">
-            <div className={`p-3 rounded-2xl bg-gradient-to-br from-brand-950/60 via-slate-900/60 to-slate-800/60 border border-brand-500/30 flex items-center gap-3 w-full overflow-hidden ${
-              isCollapsed ? 'justify-center p-2.5' : ''
-            }`}>
+            <div
+              className={`p-3 rounded-2xl bg-gradient-to-br from-brand-950/60 via-slate-900/60 to-slate-800/60 border border-brand-500/30 flex items-center gap-3 w-full overflow-hidden ${
+                isCollapsed ? 'justify-center p-2.5' : ''
+              }`}
+            >
               {effectiveRole === 'admin' ? (
                 <>
                   <div className="w-9 h-9 rounded-xl bg-brand-600 flex items-center justify-center text-white font-bold shrink-0 shadow-md">
