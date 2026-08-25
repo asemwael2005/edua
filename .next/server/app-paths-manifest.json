@@ -1,21 +1,21 @@
 {
   "/_not-found/page": "app/_not-found/page.js",
   "/api/upload/route": "app/api/upload/route.js",
-  "/page": "app/page.js",
   "/login/page": "app/login/page.js",
-  "/student/page": "app/student/page.js",
+  "/page": "app/page.js",
   "/student/assignments/page": "app/student/assignments/page.js",
+  "/student/page": "app/student/page.js",
   "/student/quizzes/[id]/page": "app/student/quizzes/[id]/page.js",
   "/student/scorecard/page": "app/student/scorecard/page.js",
   "/student/sessions/[id]/page": "app/student/sessions/[id]/page.js",
   "/student/videos/page": "app/student/videos/page.js",
-  "/admin/curriculum/page": "app/admin/curriculum/page.js",
+  "/admin/page": "app/admin/page.js",
   "/admin/assignments/page": "app/admin/assignments/page.js",
   "/admin/feedback/page": "app/admin/feedback/page.js",
   "/admin/quizzes/page": "app/admin/quizzes/page.js",
-  "/admin/page": "app/admin/page.js",
-  "/admin/students/page": "app/admin/students/page.js",
   "/admin/sessions/page": "app/admin/sessions/page.js",
+  "/admin/curriculum/page": "app/admin/curriculum/page.js",
   "/admin/settings/page": "app/admin/settings/page.js",
-  "/admin/videos/page": "app/admin/videos/page.js"
+  "/admin/videos/page": "app/admin/videos/page.js",
+  "/admin/students/page": "app/admin/students/page.js"
 }
