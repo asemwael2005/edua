@@ -224,6 +224,31 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         }
       })
       .catch(() => {});
+
+    // Fetch server-stored quizzes
+    fetch('/api/admin/quizzes')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && Array.isArray(data.quizzes)) {
+          setQuizzes((prev) => {
+            const mergedMap = new Map<string, Quiz>();
+            data.quizzes.forEach((q: Quiz) => mergedMap.set(q.id, q));
+            prev.forEach((q: Quiz) => mergedMap.set(q.id, q));
+            return Array.from(mergedMap.values());
+          });
+        }
+      })
+      .catch(() => {});
+
+    // Fetch server-stored videos
+    fetch('/api/admin/videos')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && Array.isArray(data.videos)) {
+          setVideos(data.videos);
+        }
+      })
+      .catch(() => {});
   }, []);
 
   // Auto-sync session from server cookie on mount
@@ -512,6 +537,14 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const updated = [newQuiz, ...quizzes];
     setQuizzes(updated);
     saveState('quizzes', updated);
+
+    // Sync to server store
+    fetch('/api/admin/quizzes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ quiz: newQuiz }),
+    }).catch(() => {});
+
     showToast(language === 'ar' ? 'تمت إضافة الاختبار الإلكتروني' : 'Quiz created successfully');
   };
 
@@ -519,6 +552,14 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const updated = quizzes.map((q) => (q.id === quizId ? { ...q, isOpen: !q.isOpen } : q));
     setQuizzes(updated);
     saveState('quizzes', updated);
+
+    // Sync to server store
+    fetch('/api/admin/quizzes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'toggle', quizId }),
+    }).catch(() => {});
+
     const target = updated.find((q) => q.id === quizId);
     showToast(
       language === 'ar'
@@ -534,6 +575,12 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setQuizSubmissions(updatedSubmissions);
     saveState('quizzes', updatedQuizzes);
     saveState('quiz_subs', updatedSubmissions);
+
+    // Sync to server store
+    fetch(`/api/admin/quizzes?id=${quizId}`, {
+      method: 'DELETE',
+    }).catch(() => {});
+
     showToast(
       language === 'ar' ? 'تم حذف الاختبار الإلكتروني بنجاح 🗑️' : 'Quiz deleted successfully'
     );
@@ -648,6 +695,14 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const updated = [newVideo, ...videos];
     setVideos(updated);
     saveState('videos', updated);
+
+    // Sync to server store
+    fetch('/api/admin/videos', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ video: newVideo }),
+    }).catch(() => {});
+
     showToast(language === 'ar' ? 'تم رفع ونشر تسجيل المحاضرة بنجاح' : 'Lecture recording added');
   };
 
@@ -655,6 +710,12 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const updated = videos.filter((v) => v.id !== videoId);
     setVideos(updated);
     saveState('videos', updated);
+
+    // Sync to server store
+    fetch(`/api/admin/videos?id=${videoId}`, {
+      method: 'DELETE',
+    }).catch(() => {});
+
     showToast(language === 'ar' ? 'تم حذف تسجيل الفيديو بنجاح 🗑️' : 'Video deleted');
   };
 
