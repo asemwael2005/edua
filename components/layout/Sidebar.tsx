@@ -34,7 +34,7 @@ export const Sidebar: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
     { href: '/admin', label: dict.nav.dashboard, icon: LayoutDashboard },
     { href: '/admin/students', label: dict.nav.students, icon: Users },
     { href: '/admin/sessions', label: dict.nav.sessions, icon: CalendarCheck },
-    { href: '/admin/videos', label: 'تسجيلات المحاضرات والبث', icon: Video },
+    { href: '/admin/videos', label: 'مكتبة الدروس والفيديوهات 📹', icon: Video },
     { href: '/admin/quizzes', label: dict.nav.quizzes, icon: FileCheck2 },
     { href: '/admin/assignments', label: dict.nav.assignments, icon: BookOpenCheck },
     { href: '/admin/curriculum', label: dict.nav.curriculum, icon: Map },
@@ -44,7 +44,7 @@ export const Sidebar: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
 
   const studentLinks = [
     { href: '/student', label: dict.nav.dashboard, icon: LayoutDashboard },
-    { href: '/student/videos', label: 'تسجيلات المحاضرات والبث', icon: Video },
+    { href: '/student/videos', label: 'مكتبة المحاضرات والدروس 📹', icon: Video },
     { href: '/student/quizzes', label: dict.nav.quizzes, icon: FileCheck2 },
     { href: '/student/assignments', label: dict.nav.assignments, icon: BookOpenCheck },
     { href: '/student/sessions/sess_1', label: 'المحاضرة التفاعلية (Slides)', icon: Tv },
