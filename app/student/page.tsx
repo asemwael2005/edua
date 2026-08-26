@@ -93,6 +93,9 @@ export default function StudentDashboardPage() {
                 </Link>
               </div>
             )}
+          </div>
+        </motion.div>
+
         {/* 🔴 LIVE STREAM BANNER IF ACTIVE */}
         {sessions.some((s) => s.isLive) && (
           <motion.div
