@@ -3,7 +3,7 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEduPulse } from '@/lib/context/EduPulseContext';
-import { isValidEgyptianPhone } from '@/app/admin/students/page';
+import { isValidEgyptianPhone } from '@/lib/phoneUtils';
 import {
   Sparkles,
   Lock,

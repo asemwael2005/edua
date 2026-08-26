@@ -5,7 +5,7 @@ import { useEduPulse } from '@/lib/context/EduPulseContext';
 import { BanShield } from '@/components/BanShield';
 import { RecordedVideo } from '@/types/edupulse';
 import { isMatchingGrade } from '@/lib/gradeUtils';
-import { normalizeAndValidateUrl } from '@/app/admin/videos/page';
+import { normalizeAndValidateUrl } from '@/lib/videoUtils';
 import { LiveStreamBanner } from '@/components/LiveStreamBanner';
 import { getEmbedVideoUrl } from '@/lib/videoUtils';
 import { Video, Radio, Play, Clock, Eye, Sparkles, ExternalLink, X, Film } from 'lucide-react';

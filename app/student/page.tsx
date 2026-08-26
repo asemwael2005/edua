@@ -4,7 +4,7 @@ import React from 'react';
 import { useEduPulse } from '@/lib/context/EduPulseContext';
 import { BanShield } from '@/components/BanShield';
 import { isMatchingGrade } from '@/lib/gradeUtils';
-import { normalizeAndValidateUrl } from '@/app/admin/videos/page';
+import { normalizeAndValidateUrl } from '@/lib/videoUtils';
 import { LiveStreamBanner } from '@/components/LiveStreamBanner';
 import {
   GraduationCap,
@@ -116,7 +116,8 @@ export default function StudentDashboardPage() {
           </div>
         </motion.div>
 
-        )}
+        {/* 🔴 UNCONDITIONAL LIVE STREAM BANNER WITH DIRECT MEETING LINK */}
+        <LiveStreamBanner />
 
         {/* Student Personal KPI Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">

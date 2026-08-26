@@ -22,34 +22,7 @@ import {
   Film,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getEmbedVideoUrl } from '@/lib/videoUtils';
-
-// URL Normalization & Security Validation Helper
-export const normalizeAndValidateUrl = (url: string): string | null => {
-  if (!url || typeof url !== 'string') return null;
-  let trimmed = url.trim();
-  if (!trimmed) return null;
-
-  // Reject malicious pseudo-protocols
-  if (/^(javascript|data|file|vbscript):/i.test(trimmed)) {
-    return null;
-  }
-
-  // Auto-prefix missing http/https protocol
-  if (!/^https?:\/\//i.test(trimmed)) {
-    trimmed = `https://${trimmed}`;
-  }
-
-  try {
-    const parsed = new URL(trimmed);
-    if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
-      return parsed.href;
-    }
-    return null;
-  } catch (e) {
-    return null;
-  }
-};
+import { getEmbedVideoUrl, normalizeAndValidateUrl } from '@/lib/videoUtils';
 
 export default function AdminVideosPage() {
   const { dict, videos, addVideo, deleteVideo, sessions, activeLiveStream, updateLiveStream, showToast } = useEduPulse();
@@ -97,7 +70,6 @@ export default function AdminVideosPage() {
     }
 
     // 2. Determine target grade & title
-    const selectedSession = sessions.find((s) => s.id === selectedSessionId);
     let targetGrade = 'all';
     let liveTitle = 'بث مباشر تفاعلي أونلاين 🔴';
 

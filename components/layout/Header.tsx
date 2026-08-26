@@ -36,6 +36,7 @@ export const Header: React.FC<{ onToggleSidebar?: () => void }> = ({ onToggleSid
     resetToDefaultData,
     isAdminAuthenticated,
     logoutAdmin,
+    showToast,
   } = useEduPulse();
 
   return (

@@ -1,8 +1,5 @@
 /**
- * Phone Number Normalizer Utility
- * 1. Converts Arabic-Indic digits (٠١٢٣٤٥٦٧٨٩) to Latin digits (0123456789).
- * 2. Removes non-digit characters (+, -, spaces, brackets).
- * 3. Standardizes Egyptian phone formats (e.g. +201012345678, 01012345678, 1012345678 -> 1012345678).
+ * Phone Number Normalizer & Validation Utility
  */
 export function normalizePhone(phone?: string | null): string {
   if (!phone) return '';
@@ -27,4 +24,11 @@ export function normalizePhone(phone?: string | null): string {
   }
 
   return clean;
+}
+
+export function isValidEgyptianPhone(phone: string): boolean {
+  if (!phone) return false;
+  const clean = normalizePhone(phone);
+  // Egyptian mobile numbers: 10 digits after stripping leading 0 (e.g. 1012345678, 1112345678, 1212345678, 1512345678)
+  return /^1[0125]\d{8}$/.test(clean);
 }

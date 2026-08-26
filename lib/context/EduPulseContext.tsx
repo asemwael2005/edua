@@ -16,6 +16,7 @@ import {
   BanDetails,
   RecordedVideo,
   AdminUser,
+  ActiveLiveStream,
 } from '@/types/edupulse';
 import {
   initialStudents,
@@ -904,6 +905,7 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         feedback,
         gradeLogs,
         videos,
+        activeLiveStream,
         toastMessage,
         toastType,
         showToast,

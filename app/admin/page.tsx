@@ -282,7 +282,7 @@ export default function AdminDashboard() {
                 <div className="w-10 h-10 mx-auto rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center group-hover:scale-110 transition">
                   <BookOpenCheck className="w-5 h-5" />
                 </div>
-                <span className="block text-xs font-bold text-slate-200">{dict.metrics.gradeAssignments}</span>
+                <span className="block text-xs font-bold text-slate-200">{dict.metrics.createAssignment}</span>
               </Link>
             </div>
           </div>

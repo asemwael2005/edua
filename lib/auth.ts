@@ -77,7 +77,7 @@ export async function createSessionToken(payload: Omit<SessionPayload, 'iat' | '
     new TextEncoder().encode(dataToSign)
   );
 
-  const signature = base64UrlEncode(String.fromCharCode(...new Uint8Array(signatureBuffer)));
+  const signature = base64UrlEncode(String.fromCharCode(...Array.from(new Uint8Array(signatureBuffer))));
   return `${dataToSign}.${signature}`;
 }
 

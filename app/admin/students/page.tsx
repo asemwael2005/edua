@@ -26,12 +26,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// Egyptian Phone Number Validation (010, 011, 012, 015 - 11 digits or +20 format)
-export const isValidEgyptianPhone = (phone: string): boolean => {
-  if (!phone) return false;
-  const clean = phone.replace(/[\s\-\(\)]/g, '');
-  return /^(?:\+20|0)?1[0125]\d{8}$/.test(clean);
-};
+import { isValidEgyptianPhone } from '@/lib/phoneUtils';
 
 export default function StudentsManagementPage() {
   const {

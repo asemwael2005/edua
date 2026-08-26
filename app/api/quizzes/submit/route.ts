@@ -65,6 +65,7 @@ export async function POST(request: NextRequest) {
       totalScore,
       maxScore,
       percentage,
+      timeSpentSeconds: body.timeSpentSeconds || 60,
       submittedAt: new Date().toISOString(),
     };
 
