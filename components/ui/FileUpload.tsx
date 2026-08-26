@@ -7,12 +7,14 @@ interface FileUploadProps {
   onUploadSuccess: (fileData: { url: string; name: string; size: number; type: string }) => void;
   accept?: string;
   label?: string;
+  hint?: string;
 }
 
 export const FileUpload: React.FC<FileUploadProps> = ({
   onUploadSuccess,
   accept = '.pdf,.doc,.docx,.ppt,.pptx,.png,.jpg,.jpeg',
   label = 'رفع ملف، ملزمة، أو سلايدات (PDF, Docs, Images)',
+  hint,
 }) => {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<{ url: string; name: string } | null>(null);
@@ -47,6 +49,10 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       setIsUploading(false);
     }
   };
+
+  const defaultHint = accept.includes('video')
+    ? 'يدعم صيغ الفيديو المختلفة (MP4, WebM, MOV, AVI)'
+    : 'يدعم PDF, Word, PowerPoint, والصور';
 
   return (
     <div className="space-y-2">
@@ -87,7 +93,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                 <Upload className="w-5 h-5" />
               </div>
               <span className="text-xs font-bold text-slate-300">اضغط هنا لاختيار الملف من جهازك</span>
-              <span className="text-[10px] text-slate-500 font-mono">يدعم PDF, Word, PowerPoint, والصور</span>
+              <span className="text-[10px] text-slate-500 font-mono">{hint || defaultHint}</span>
             </>
           )}
         </label>

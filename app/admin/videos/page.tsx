@@ -383,6 +383,7 @@ export default function AdminVideosPage() {
                       }}
                       accept="video/*"
                       label="رفع فيديو من جهازك (MP4 / WebM)"
+                      hint="يدعم صيغ الفيديو المختلفة (MP4, WebM, MOV, AVI)"
                     />
 
                     <div className="text-center text-[10px] text-slate-500 font-bold">أو أدخل رابط الفيديو أونلاين:</div>
