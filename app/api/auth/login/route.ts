@@ -3,6 +3,7 @@ import { createSessionToken, setSessionCookieInResponse } from '@/lib/auth';
 import { initialStudents } from '@/lib/seedData';
 import { getGlobalStudents } from '@/lib/serverStore';
 import { readDatabase } from '@/lib/db';
+import { normalizePhone } from '@/lib/phoneUtils';
 
 const SERVER_ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
 
@@ -41,15 +42,16 @@ export async function POST(request: NextRequest) {
     }
 
     if (role === 'student') {
-      if (!studentCode || !studentCode.trim()) {
+      if (!studentCode || !studentCode.toString().trim()) {
         return NextResponse.json(
           { error: 'يرجى كتابة رقم الهاتف أو البريد الإلكتروني' },
           { status: 400 }
         );
       }
 
-      const query = studentCode.trim().toLowerCase();
-      const cleanPhone = query.replace(/[\s\-\(\)]/g, '');
+      const rawInput = studentCode.toString().trim();
+      const normInputPhone = normalizePhone(rawInput);
+      const normInputQuery = rawInput.toLowerCase();
 
       // Combine server DB students, server store students, client payload students, and initial seed students
       let dbStudents: any[] = [];
@@ -61,28 +63,45 @@ export async function POST(request: NextRequest) {
       const clientStudents = Array.isArray(customStudents) ? customStudents : [];
       const allStudents = [...dbStudents, ...serverStudents, ...clientStudents, ...initialStudents];
 
-      const foundStudent = allStudents.find(
-        (s: any) =>
-          (s.studentPhone && s.studentPhone.replace(/[\s\-\(\)]/g, '').includes(cleanPhone)) ||
-          (s.parentPhone && s.parentPhone.replace(/[\s\-\(\)]/g, '').includes(cleanPhone)) ||
-          (s.email && s.email.toLowerCase().includes(query)) ||
-          (s.name && s.name.toLowerCase().includes(query)) ||
-          (s.id && s.id.toLowerCase() === query)
-      );
+      const foundStudent = allStudents.find((s: any) => {
+        if (!s) return false;
+        const normStPhone = normalizePhone(s.studentPhone);
+        const normPrPhone = normalizePhone(s.parentPhone);
+
+        // Check phone matching with normalized digits
+        if (normInputPhone && normInputPhone.length >= 6) {
+          if (normStPhone && (normStPhone.includes(normInputPhone) || normInputPhone.includes(normStPhone))) return true;
+          if (normPrPhone && (normPrPhone.includes(normInputPhone) || normInputPhone.includes(normPrPhone))) return true;
+        }
+
+        // Check email, ID, or name match
+        if (s.email && s.email.toLowerCase().trim() === normInputQuery) return true;
+        if (s.id && s.id.toLowerCase() === normInputQuery) return true;
+        if (s.name && s.name.toLowerCase().includes(normInputQuery)) return true;
+
+        return false;
+      });
 
       if (!foundStudent) {
         return NextResponse.json(
-          { error: 'كود الطالب غير مسجل على المنصة' },
+          { error: 'رقم الهاتف أو كود الطالب غير مسجل على المنصة، يرجى إنشاء حساب جديد' },
           { status: 401 }
         );
       }
 
-      // Verify student password if set on student account
-      if (foundStudent.password && password && foundStudent.password !== password) {
-        return NextResponse.json(
-          { error: 'كلمة السر الخاصة بالطالب غير صحيحة' },
-          { status: 401 }
-        );
+      // Password verification (handles Arabic keyboard digits & whitespace)
+      if (foundStudent.password && password) {
+        const savedPass = foundStudent.password.toString().trim();
+        const inputPass = password.toString().trim();
+        const normSavedPass = normalizePhone(savedPass) || savedPass;
+        const normInputPass = normalizePhone(inputPass) || inputPass;
+
+        if (savedPass !== inputPass && normSavedPass !== normInputPass) {
+          return NextResponse.json(
+            { error: 'كلمة المرور غير صحيحة، يرجى التثبت والربط مجدداً' },
+            { status: 401 }
+          );
+        }
       }
 
       const token = await createSessionToken({
@@ -100,6 +119,7 @@ export async function POST(request: NextRequest) {
           name: foundStudent.name,
           email: foundStudent.email,
         },
+        student: foundStudent,
       });
 
       setSessionCookieInResponse(response, token);

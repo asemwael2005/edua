@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createSessionToken, setSessionCookieInResponse } from '@/lib/auth';
 import { addGlobalStudent, getGlobalStudents } from '@/lib/serverStore';
 import { readDatabase, writeDatabase } from '@/lib/db';
+import { normalizePhone } from '@/lib/phoneUtils';
 import { Student } from '@/types/edupulse';
 
 export async function POST(request: NextRequest) {
@@ -23,23 +24,34 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Egyptian phone validation
-    const cleanPhone = parentPhone.replace(/[\s\-\(\)]/g, '');
-    if (!/^(?:\+20|0)?1[0125]\d{8}$/.test(cleanPhone)) {
+    // Convert Arabic numerals & normalize phones
+    const normParent = normalizePhone(parentPhone);
+    const normStudent = normalizePhone(studentPhone || parentPhone);
+
+    if (normParent.length < 10) {
       return NextResponse.json(
         { error: 'رقم هاتف ولي الأمر غير صحيح (يجب أن يكون رقم مصري مكون من 11 رقم)' },
         { status: 400 }
       );
     }
 
-    // Check if email already registered
-    const existing = getGlobalStudents().find(
-      (s) => s.email && s.email.toLowerCase() === email.toLowerCase().trim()
+    // Check if phone or email already registered in DB or server store
+    let existingStudents: Student[] = [];
+    try {
+      existingStudents = readDatabase().students || [];
+    } catch (e) {}
+    const allKnownStudents = [...existingStudents, ...getGlobalStudents()];
+
+    const existing = allKnownStudents.find(
+      (s) =>
+        (s.email && s.email.toLowerCase() === email.toLowerCase().trim()) ||
+        (s.parentPhone && normalizePhone(s.parentPhone) === normParent) ||
+        (s.studentPhone && normalizePhone(s.studentPhone) === normStudent)
     );
 
     if (existing) {
       return NextResponse.json(
-        { error: 'هذا البريد الإلكتروني مسجل بالفعل على المنصة، يرجى تسجيل الدخول' },
+        { error: 'رقم الهاتف أو البريد الإلكتروني مسجل بالفعل على المنصة، يرجى تسجيل الدخول مباشرة' },
         { status: 400 }
       );
     }
