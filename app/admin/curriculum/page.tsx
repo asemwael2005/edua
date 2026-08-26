@@ -3,16 +3,51 @@
 import React, { useState } from 'react';
 import { useEduPulse } from '@/lib/context/EduPulseContext';
 import { CurriculumMilestone } from '@/types/edupulse';
-import { Map, CheckCircle2, Clock, Sparkles, BookOpen, ChevronLeft, Trash2, AlertTriangle } from 'lucide-react';
+import { Map, CheckCircle2, Clock, Sparkles, BookOpen, ChevronLeft, Trash2, AlertTriangle, Plus, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function CurriculumRoadmapPage() {
-  const { dict, curriculum, updateCurriculumMilestone, deleteCurriculumMilestone } = useEduPulse();
+  const { dict, curriculum, addCurriculumMilestone, deleteCurriculumMilestone } = useEduPulse();
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [deleteConfirmMilestone, setDeleteConfirmMilestone] = useState<CurriculumMilestone | null>(null);
+
+  // Form State for New Milestone
+  const [title, setTitle] = useState('');
+  const [subject, setSubject] = useState('الرياضيات');
+  const [grade, setGrade] = useState('الصف الأول الثانوي (Grade 10)');
+  const [status, setStatus] = useState<'completed' | 'in_progress' | 'upcoming'>('in_progress');
+  const [progressPercent, setProgressPercent] = useState(0);
+  const [estimatedWeeks, setEstimatedWeeks] = useState('3 أسابيع');
+  const [topicsInput, setTopicsInput] = useState('');
 
   const totalProgress = Math.round(
     curriculum.reduce((acc, c) => acc + c.progressPercent, 0) / (curriculum.length || 1)
   );
+
+  const handleCreate = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!title) return;
+
+    const topics = topicsInput
+      .split(',')
+      .map((t) => t.trim())
+      .filter(Boolean);
+
+    addCurriculumMilestone({
+      title,
+      subject,
+      grade,
+      status,
+      progressPercent,
+      estimatedWeeks,
+      topics: topics.length > 0 ? topics : ['مفاهيم الوحدة الأساسية', 'تمارين وتطبيقات عملية'],
+    });
+
+    setIsCreateModalOpen(false);
+    setTitle('');
+    setTopicsInput('');
+    setProgressPercent(0);
+  };
 
   const handleConfirmDelete = () => {
     if (!deleteConfirmMilestone) return;
@@ -24,12 +59,23 @@ export default function CurriculumRoadmapPage() {
     <div className="space-y-8 pb-12">
       
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-3">
-          <Map className="w-7 h-7 text-cyan-500" />
-          <span>{dict.curriculum.title}</span>
-        </h1>
-        <p className="text-xs text-slate-400 mt-1">{dict.curriculum.subtitle}</p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-3">
+            <Map className="w-7 h-7 text-cyan-500" />
+            <span>{dict.curriculum.title}</span>
+          </h1>
+          <p className="text-xs text-slate-400 mt-1">{dict.curriculum.subtitle}</p>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setIsCreateModalOpen(true)}
+          className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-cyan-600 to-teal-600 hover:from-cyan-500 hover:to-teal-500 text-white font-bold text-xs shadow-lg shadow-cyan-500/20 flex items-center gap-2 shrink-0 transition"
+        >
+          <Plus className="w-4 h-4" />
+          <span>إضافة وحدة في الخطة الدراسية 🎯</span>
+        </button>
       </div>
 
       {/* Overall Progress Banner */}
@@ -67,6 +113,7 @@ export default function CurriculumRoadmapPage() {
           <div className="p-12 text-center rounded-3xl glass-panel border space-y-3">
             <Map className="w-12 h-12 text-slate-600 mx-auto" />
             <h4 className="text-sm font-bold text-slate-300">لا توجد وحدات بالخطة الدراسية حالياً</h4>
+            <p className="text-xs text-slate-500">اضغط على زر "إضافة وحدة في الخطة الدراسية" لبدء إضافة فصول المنهج</p>
           </div>
         ) : (
           curriculum.map((item, idx) => {
@@ -99,7 +146,7 @@ export default function CurriculumRoadmapPage() {
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <div>
                       <h3 className="text-base font-extrabold text-white">{item.title}</h3>
-                      <span className="text-xs text-slate-400">المدة التقديرية: {item.estimatedWeeks}</span>
+                      <span className="text-xs text-slate-400">المدة التقديرية: {item.estimatedWeeks} | {item.subject} | {item.grade}</span>
                     </div>
 
                     <div className="flex items-center gap-2">
@@ -163,6 +210,131 @@ export default function CurriculumRoadmapPage() {
           })
         )}
       </div>
+
+      {/* --- CREATE MILESTONE MODAL --- */}
+      <AnimatePresence>
+        {isCreateModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md overflow-y-auto text-white">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="max-w-md w-full p-6 rounded-3xl bg-slate-900 border border-cyan-500/30 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto"
+            >
+              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 className="text-base font-extrabold">إضافة وحدة جديدة للخطة الدراسية</h3>
+                <button type="button" onClick={() => setIsCreateModalOpen(false)} className="p-1.5 text-slate-400 hover:text-white">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleCreate} className="space-y-4 text-xs font-semibold">
+                <div className="space-y-1">
+                  <label className="text-slate-300">عنوان الوحدة / الفصل الدراسي</label>
+                  <input
+                    type="text"
+                    required
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder="مثال: الوحدة الرابعة: الهندسة الفراغية والمنتجهات"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white focus:outline-none focus:border-cyan-500"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-slate-300">المادة الدراسية</label>
+                    <input
+                      type="text"
+                      value={subject}
+                      onChange={(e) => setSubject(e.target.value)}
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-slate-300">الصف الدراسي المستهدف</label>
+                    <select
+                      value={grade}
+                      onChange={(e) => setGrade(e.target.value)}
+                      className="w-full px-2 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-[11px]"
+                    >
+                      <option value="الصف الأول الثانوي (Grade 10)">الصف الأول الثانوي (Grade 10)</option>
+                      <option value="الصف الثاني الثانوي (Grade 11)">الصف الثاني الثانوي (Grade 11)</option>
+                      <option value="الصف الثالث الثانوي (Grade 12)">الصف الثالث الثانوي (Grade 12)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-slate-300">حالة الإنجاز</label>
+                    <select
+                      value={status}
+                      onChange={(e) => setStatus(e.target.value as any)}
+                      className="w-full px-2 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white text-[11px]"
+                    >
+                      <option value="in_progress">قيد التنفيذ (In Progress)</option>
+                      <option value="upcoming">قادمة (Upcoming)</option>
+                      <option value="completed">مكتملة (Completed)</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-slate-300">نسبة الإتمام %</label>
+                    <input
+                      type="number"
+                      min={0}
+                      max={100}
+                      value={progressPercent}
+                      onChange={(e) => setProgressPercent(Number(e.target.value))}
+                      className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white font-mono"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-slate-300">المدة التقديرية</label>
+                    <input
+                      type="text"
+                      value={estimatedWeeks}
+                      onChange={(e) => setEstimatedWeeks(e.target.value)}
+                      placeholder="4 أسابيع"
+                      className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-slate-300">مواضيع الدرس (افصل بينها بفاصلة ,)</label>
+                  <textarea
+                    rows={3}
+                    value={topicsInput}
+                    onChange={(e) => setTopicsInput(e.target.value)}
+                    placeholder="مثال: المتجهات في الفراغ, معادلة الخط المستقيم, معادلة المستوى..."
+                    className="w-full p-3 rounded-xl bg-slate-950 border border-slate-800 text-white focus:outline-none focus:border-cyan-500"
+                  />
+                </div>
+
+                <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+                  <button
+                    type="button"
+                    onClick={() => setIsCreateModalOpen(false)}
+                    className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 font-bold"
+                  >
+                    إلغاء
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold shadow-lg shadow-cyan-500/20"
+                  >
+                    حفظ وإضافة الوحدة
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* --- CONFIRM DELETE MILESTONE MODAL --- */}
       <AnimatePresence>

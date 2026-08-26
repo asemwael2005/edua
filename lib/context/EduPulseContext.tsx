@@ -91,6 +91,7 @@ interface EduPulseContextType {
   deleteAssignment: (assignmentId: string) => void;
   submitAssignment: (assignmentId: string, studentId: string, content: string) => void;
   gradeSubmission: (submissionId: string, score: number, feedback: string) => void;
+  addCurriculumMilestone: (milestone: Omit<CurriculumMilestone, 'id'>) => void;
   updateCurriculumMilestone: (milestone: CurriculumMilestone) => void;
   deleteCurriculumMilestone: (milestoneId: string) => void;
   addSessionFeedback: (feedback: Omit<SessionFeedback, 'id' | 'submittedAt'>) => void;
@@ -667,10 +668,23 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     showToast(language === 'ar' ? 'تم حفظ تصحيح الواجب والملاحظات' : 'Assignment graded');
   };
 
+  const addCurriculumMilestone = (mData: Omit<CurriculumMilestone, 'id'>) => {
+    const newMilestone: CurriculumMilestone = {
+      ...mData,
+      id: `cur_${Date.now()}`,
+    };
+    const updated = [...curriculum, newMilestone];
+    setCurriculum(updated);
+    saveState('curriculum', updated);
+    syncDB('create', 'curriculum', newMilestone);
+    showToast(language === 'ar' ? 'تمت إضافة الوحدة إلى الخطة الدراسية بنجاح 🎯' : 'Curriculum milestone added');
+  };
+
   const updateCurriculumMilestone = (milestone: CurriculumMilestone) => {
     const updated = curriculum.map((c) => (c.id === milestone.id ? milestone : c));
     setCurriculum(updated);
     saveState('curriculum', updated);
+    syncDB('update', 'curriculum', milestone);
     showToast(language === 'ar' ? 'تم تحديث وحدة المنهج الدراسي' : 'Curriculum updated');
   };
 
@@ -858,6 +872,7 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         submitAssignment,
         gradeSubmission,
         updateCurriculumMilestone,
+        addCurriculumMilestone,
         deleteCurriculumMilestone,
         addSessionFeedback,
         deleteSessionFeedback,
