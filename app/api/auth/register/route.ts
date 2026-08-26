@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSessionToken, setSessionCookieInResponse } from '@/lib/auth';
 import { addGlobalStudent, getGlobalStudents } from '@/lib/serverStore';
+import { readDatabase, writeDatabase } from '@/lib/db';
 import { Student } from '@/types/edupulse';
 
 export async function POST(request: NextRequest) {
@@ -58,8 +59,20 @@ export async function POST(request: NextRequest) {
       joinedDate: new Date().toISOString().split('T')[0],
     };
 
-    // Save to global server store
+    // Save to global server store & server Database
     addGlobalStudent(newStudent);
+    try {
+      const db = readDatabase();
+      const existingIdx = db.students.findIndex((s) => s.id === newStudent.id || s.email === newStudent.email);
+      if (existingIdx >= 0) {
+        db.students[existingIdx] = newStudent;
+      } else {
+        db.students = [newStudent, ...db.students];
+      }
+      writeDatabase(db);
+    } catch (e) {
+      console.warn('Database write error on register:', e);
+    }
 
     // Create Session Token and Cookie
     const token = await createSessionToken({

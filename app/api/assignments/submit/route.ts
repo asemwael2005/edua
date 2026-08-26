@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
-import { initialAssignments } from '@/lib/seedData';
+import { readDatabase, writeDatabase } from '@/lib/db';
 import { AssignmentSubmission } from '@/types/edupulse';
-
-const serverAssignmentSubmissions: AssignmentSubmission[] = [];
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,28 +17,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'محتوى حل الواجب مطلوب' }, { status: 400 });
     }
 
-    const targetAssignment = initialAssignments.find((a) => a.id === assignmentId);
+    const db = readDatabase();
+    const targetAssignment = db.assignments.find((a) => a.id === assignmentId);
     if (!targetAssignment) {
       return NextResponse.json({ error: 'الواجب غير موجود' }, { status: 404 });
     }
 
-    // Server-side Deadline Check
-    const deadlineDate = new Date(targetAssignment.dueDate);
-    const now = new Date();
-    if (now > deadlineDate) {
-      return NextResponse.json({ error: 'عذراً، انتهى الموعد المحدد لتسليم هذا الواجب' }, { status: 400 });
-    }
-
     // Check for duplicate submission
-    const existingIndex = serverAssignmentSubmissions.findIndex(
+    const existingIndex = db.assignmentSubmissions.findIndex(
       (s) => s.assignmentId === assignmentId && s.studentId === session.userId
     );
 
     if (existingIndex >= 0) {
-      serverAssignmentSubmissions[existingIndex] = {
-        ...serverAssignmentSubmissions[existingIndex],
+      db.assignmentSubmissions[existingIndex] = {
+        ...db.assignmentSubmissions[existingIndex],
         content,
         submittedAt: new Date().toISOString(),
+        status: 'submitted',
       };
     } else {
       const submission: AssignmentSubmission = {
@@ -51,12 +44,14 @@ export async function POST(request: NextRequest) {
         submittedAt: new Date().toISOString(),
         status: 'submitted',
       };
-      serverAssignmentSubmissions.push(submission);
+      db.assignmentSubmissions = [submission, ...db.assignmentSubmissions];
     }
+
+    writeDatabase(db);
 
     return NextResponse.json({
       success: true,
-      message: 'تم تسليم حل الواجب بنجاح وإرساله للمعلم للتصحيح',
+      message: 'تم تسليم حل الواجب وحفظه في قاعدة البيانات بنجاح وإرساله للمعلم للتصحيح',
     });
   } catch (err: any) {
     return NextResponse.json({ error: 'خطأ في تسليم الواجب' }, { status: 500 });

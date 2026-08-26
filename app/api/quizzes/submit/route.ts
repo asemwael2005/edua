@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
-import { initialQuizzes } from '@/lib/seedData';
+import { readDatabase, writeDatabase } from '@/lib/db';
 import { QuizSubmission } from '@/types/edupulse';
-
-// Server-side submission log memory
-const serverQuizSubmissions: QuizSubmission[] = [];
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,12 +14,13 @@ export async function POST(request: NextRequest) {
     const { quizId, answers } = body;
 
     if (!quizId || !answers || typeof answers !== 'object') {
-      return NextResponse.json({ error: 'بيانات التسليم غير اكتمال' }, { status: 400 });
+      return NextResponse.json({ error: 'بيانات التسليم غير مكتملة' }, { status: 400 });
     }
 
-    const targetQuiz = initialQuizzes.find((q) => q.id === quizId);
+    const db = readDatabase();
+    const targetQuiz = db.quizzes.find((q) => q.id === quizId);
     if (!targetQuiz) {
-      return NextResponse.json({ error: 'الاختبار غير موجود' }, { status: 444 });
+      return NextResponse.json({ error: 'الاختبار غير موجود' }, { status: 404 });
     }
 
     if (!targetQuiz.isOpen) {
@@ -30,7 +28,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if student has already submitted
-    const existingSubmission = serverQuizSubmissions.find(
+    const existingSubmission = db.quizSubmissions.find(
       (s) => s.quizId === quizId && s.studentId === session.userId
     );
 
@@ -63,7 +61,6 @@ export async function POST(request: NextRequest) {
       id: `qsub_${Date.now()}`,
       quizId,
       studentId: session.userId,
-      studentName: session.name || 'طالب',
       answers,
       totalScore,
       maxScore,
@@ -71,12 +68,20 @@ export async function POST(request: NextRequest) {
       submittedAt: new Date().toISOString(),
     };
 
-    serverQuizSubmissions.push(submission);
+    db.quizSubmissions = [submission, ...db.quizSubmissions];
+
+    // Update student's totalPoints in database
+    const targetStudent = db.students.find((s) => s.id === session.userId);
+    if (targetStudent) {
+      targetStudent.totalPoints = (targetStudent.totalPoints || 0) + totalScore;
+    }
+
+    writeDatabase(db);
 
     return NextResponse.json({
       success: true,
       submission,
-      message: `تم تصحيح الاختبار إلكترونياً بنجاح! درجتك: ${totalScore}/${maxScore}`,
+      message: `تم تصحيح الاختبار إلكترونياً وحفظ النتيجة في قاعدة البيانات بنجاح! درجتك: ${totalScore}/${maxScore}`,
     });
   } catch (err: any) {
     return NextResponse.json({ error: 'خطأ في معالجة تسليم الاختبار' }, { status: 500 });
