@@ -82,6 +82,7 @@ interface EduPulseContextType {
   markAttendance: (sessionId: string, studentId: string, status: AttendanceStatus) => void;
   updateSlideProgress: (sessionId: string, studentId: string, slideNumber: number) => void;
   createSession: (sessionData: Omit<Session, 'id' | 'attendance' | 'studentProgress'>) => void;
+  deleteSession: (sessionId: string) => void;
   createQuiz: (quiz: Omit<Quiz, 'id'>) => void;
   toggleQuizStatus: (quizId: string) => void;
   deleteQuiz: (quizId: string) => void;
@@ -529,6 +530,13 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     showToast(language === 'ar' ? 'تمت إضافة المحاضرة/الجلسة التعليمية بنجاح' : 'Session created successfully');
   };
 
+  const deleteSession = (sessionId: string) => {
+    const updated = sessions.filter((s) => s.id !== sessionId);
+    setSessions(updated);
+    saveState('sessions', updated);
+    showToast(language === 'ar' ? 'تم حذف المحاضرة/الجلسة التعليمية بنجاح 🗑️' : 'Session deleted successfully');
+  };
+
   const createQuiz = (quizData: Omit<Quiz, 'id'>) => {
     const newQuiz: Quiz = {
       ...quizData,
@@ -852,6 +860,7 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         markAttendance,
         updateSlideProgress,
         createSession,
+        deleteSession,
         createQuiz,
         toggleQuizStatus,
         deleteQuiz,

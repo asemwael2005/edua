@@ -24,15 +24,18 @@ import {
   Download,
   FileText,
   X,
+  Trash2,
+  AlertTriangle,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function SessionsAdminPage() {
-  const { dict, sessions, students, markAttendance, updateSlideProgress, createSession } = useEduPulse();
+  const { dict, sessions, students, markAttendance, updateSlideProgress, createSession, deleteSession } = useEduPulse();
 
   const [selectedSessionId, setSelectedSessionId] = useState<string>(sessions[0]?.id || '');
   const [activeTab, setActiveTab] = useState<'attendance' | 'slides'>('attendance');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [deleteConfirmSession, setDeleteConfirmSession] = useState<Session | null>(null);
 
   // Presentation viewer state
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
@@ -40,7 +43,7 @@ export default function SessionsAdminPage() {
   // New Session Form State
   const [title, setTitle] = useState('');
   const [subject, setSubject] = useState('الرياضيات');
-  const [grade, setGrade] = useState('الصف الثالث الثانوي');
+  const [grade, setGrade] = useState('الصف الأول الثانوي (Grade 10)');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [time, setTime] = useState('17:00 - 19:30');
   const [room, setRoom] = useState('القاعة الرئيسية A1');
@@ -105,6 +108,16 @@ export default function SessionsAdminPage() {
     setDescription('');
   };
 
+  const handleConfirmDelete = () => {
+    if (!deleteConfirmSession) return;
+    deleteSession(deleteConfirmSession.id);
+    setDeleteConfirmSession(null);
+    if (sessions.length > 1) {
+      const remaining = sessions.filter((s) => s.id !== deleteConfirmSession.id);
+      setSelectedSessionId(remaining[0]?.id || '');
+    }
+  };
+
   const slides = selectedSession?.slides || [];
   const currentSlide = slides[currentSlideIndex] || slides[0];
 
@@ -121,8 +134,8 @@ export default function SessionsAdminPage() {
           <p className="text-xs text-slate-400 mt-1">{dict.sessions.subtitle}</p>
         </div>
 
-        {/* Session Selector & Create Button */}
-        <div className="flex items-center gap-3">
+        {/* Session Selector, Delete Button & Create Button */}
+        <div className="flex items-center gap-3 flex-wrap">
           {sessions.length > 0 && (
             <select
               value={selectedSessionId}
@@ -130,7 +143,7 @@ export default function SessionsAdminPage() {
                 setSelectedSessionId(e.target.value);
                 setCurrentSlideIndex(0);
               }}
-              className="px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs font-bold text-white focus:outline-none focus:border-brand-500 cursor-pointer"
+              className="px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs font-bold text-white focus:outline-none focus:border-emerald-500 cursor-pointer"
             >
               {sessions.map((s) => (
                 <option key={s.id} value={s.id}>
@@ -138,6 +151,18 @@ export default function SessionsAdminPage() {
                 </option>
               ))}
             </select>
+          )}
+
+          {selectedSession && (
+            <button
+              type="button"
+              onClick={() => setDeleteConfirmSession(selectedSession)}
+              className="px-3.5 py-2.5 rounded-xl bg-rose-950/70 hover:bg-rose-900/90 text-rose-300 border border-rose-500/40 font-bold text-xs flex items-center gap-1.5 transition shadow"
+              title="مسح هذه المحاضرة"
+            >
+              <Trash2 className="w-4 h-4 text-rose-400" />
+              <span>مسح المحاضرة 🗑️</span>
+            </button>
           )}
 
           <button
@@ -156,7 +181,7 @@ export default function SessionsAdminPage() {
           onClick={() => setActiveTab('attendance')}
           className={`pb-3 px-4 border-b-2 flex items-center gap-2 transition ${
             activeTab === 'attendance'
-              ? 'border-brand-500 text-brand-400'
+              ? 'border-emerald-500 text-emerald-400'
               : 'border-transparent text-slate-400 hover:text-slate-200'
           }`}
         >
@@ -168,7 +193,7 @@ export default function SessionsAdminPage() {
           onClick={() => setActiveTab('slides')}
           className={`pb-3 px-4 border-b-2 flex items-center gap-2 transition ${
             activeTab === 'slides'
-              ? 'border-brand-500 text-brand-400'
+              ? 'border-emerald-500 text-emerald-400'
               : 'border-transparent text-slate-400 hover:text-slate-200'
           }`}
         >
@@ -187,20 +212,31 @@ export default function SessionsAdminPage() {
               <div>
                 <h3 className="text-base font-bold text-white">{selectedSession.title}</h3>
                 <p className="text-xs text-slate-400 mt-0.5">
-                  المادة: <span className="text-brand-400 font-semibold">{selectedSession.subject}</span> | الموعد: {selectedSession.date} ({selectedSession.time}) | القاعة: {selectedSession.room}
+                  المادة: <span className="text-emerald-400 font-semibold">{selectedSession.subject}</span> | الموعد: {selectedSession.date} ({selectedSession.time}) | القاعة: {selectedSession.room}
                 </p>
               </div>
 
-              <div className="flex items-center gap-4 text-xs font-bold font-mono">
-                <div className="px-3 py-1.5 rounded-xl bg-emerald-950/60 border border-emerald-500/30 text-emerald-300">
-                  حاضر: {Object.values(selectedSession.attendance).filter((s) => s === 'present').length}
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 text-xs font-bold font-mono">
+                  <div className="px-3 py-1.5 rounded-xl bg-emerald-950/60 border border-emerald-500/30 text-emerald-300">
+                    حاضر: {Object.values(selectedSession.attendance).filter((s) => s === 'present').length}
+                  </div>
+                  <div className="px-3 py-1.5 rounded-xl bg-rose-950/60 border border-rose-500/30 text-rose-300">
+                    غائب: {Object.values(selectedSession.attendance).filter((s) => s === 'absent').length}
+                  </div>
+                  <div className="px-3 py-1.5 rounded-xl bg-amber-950/60 border border-amber-500/30 text-amber-300">
+                    متأخر: {Object.values(selectedSession.attendance).filter((s) => s === 'late').length}
+                  </div>
                 </div>
-                <div className="px-3 py-1.5 rounded-xl bg-rose-950/60 border border-rose-500/30 text-rose-300">
-                  غائب: {Object.values(selectedSession.attendance).filter((s) => s === 'absent').length}
-                </div>
-                <div className="px-3 py-1.5 rounded-xl bg-amber-950/60 border border-amber-500/30 text-amber-300">
-                  متأخر: {Object.values(selectedSession.attendance).filter((s) => s === 'late').length}
-                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setDeleteConfirmSession(selectedSession)}
+                  className="px-3 py-1.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/40 border border-rose-500/30 text-rose-300 text-xs font-bold transition flex items-center gap-1"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>مسح 🗑️</span>
+                </button>
               </div>
             </div>
 
@@ -249,13 +285,13 @@ export default function SessionsAdminPage() {
                               <div className="flex items-center gap-2">
                                 <div className="w-20 h-2 rounded-full bg-slate-800 overflow-hidden">
                                   <div
-                                    className="h-full bg-brand-500 rounded-full"
+                                    className="h-full bg-emerald-500 rounded-full"
                                     style={{
                                       width: `${(currentSlidePos / (selectedSession.slides.length || 1)) * 100}%`,
                                     }}
                                   />
                                 </div>
-                                <span className="text-[11px] font-mono text-brand-300 font-bold">
+                                <span className="text-[11px] font-mono text-emerald-300 font-bold">
                                   شريحة {currentSlidePos} / {selectedSession.slides.length}
                                 </span>
                               </div>
@@ -342,16 +378,16 @@ export default function SessionsAdminPage() {
           
           {/* Main Slide Presentation Viewer */}
           <div className="lg:col-span-2 space-y-4">
-            <div className="p-6 rounded-3xl bg-slate-900 border border-brand-500/30 shadow-2xl space-y-6 min-h-[420px] flex flex-col justify-between relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-brand-500/10 rounded-full blur-2xl pointer-events-none" />
+            <div className="p-6 rounded-3xl bg-slate-900 border border-emerald-500/30 shadow-2xl space-y-6 min-h-[420px] flex flex-col justify-between relative overflow-hidden text-white">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
 
               {/* Slide Header Controls */}
               <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                <span className="text-xs font-bold text-brand-400 font-mono">
+                <span className="text-xs font-bold text-emerald-400 font-mono">
                   شريحة {currentSlideIndex + 1} من {slides.length}
                 </span>
                 <h3 className="text-sm font-extrabold text-white">{currentSlide?.title}</h3>
-                <span className="px-2.5 py-1 rounded-lg bg-brand-950 text-brand-300 text-[11px] font-mono">
+                <span className="px-2.5 py-1 rounded-lg bg-emerald-950 text-emerald-300 text-[11px] font-mono">
                   عروض إديو بلس
                 </span>
               </div>
@@ -361,7 +397,7 @@ export default function SessionsAdminPage() {
                 <p className="text-sm text-slate-200 leading-relaxed font-medium">{currentSlide?.content}</p>
 
                 {currentSlide?.codeOrDiagram && (
-                  <div className="p-4 rounded-2xl bg-slate-950 border border-brand-500/30 text-cyan-300 font-mono text-xs overflow-x-auto">
+                  <div className="p-4 rounded-2xl bg-slate-950 border border-emerald-500/30 text-cyan-300 font-mono text-xs overflow-x-auto">
                     <code>{currentSlide.codeOrDiagram}</code>
                   </div>
                 )}
@@ -370,7 +406,7 @@ export default function SessionsAdminPage() {
                   <ul className="space-y-2 pt-2">
                     {currentSlide.bulletPoints.map((bp, i) => (
                       <li key={i} className="flex items-start gap-2 text-xs text-slate-300">
-                        <span className="w-1.5 h-1.5 rounded-full bg-brand-400 mt-1.5 shrink-0" />
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 mt-1.5 shrink-0" />
                         <span>{bp}</span>
                       </li>
                     ))}
@@ -395,7 +431,7 @@ export default function SessionsAdminPage() {
                       key={idx}
                       onClick={() => setCurrentSlideIndex(idx)}
                       className={`w-2.5 h-2.5 rounded-full transition-all ${
-                        idx === currentSlideIndex ? 'w-6 bg-brand-500' : 'bg-slate-700 hover:bg-slate-500'
+                        idx === currentSlideIndex ? 'w-6 bg-emerald-500' : 'bg-slate-700 hover:bg-slate-500'
                       }`}
                     />
                   ))}
@@ -404,7 +440,7 @@ export default function SessionsAdminPage() {
                 <button
                   disabled={currentSlideIndex === slides.length - 1}
                   onClick={() => setCurrentSlideIndex((prev) => Math.min(slides.length - 1, prev + 1))}
-                  className="px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 disabled:opacity-40 text-xs font-bold text-white flex items-center gap-1.5 transition shadow-lg"
+                  className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-xs font-bold text-white flex items-center gap-1.5 transition shadow-lg"
                 >
                   <span>{dict.slides.next}</span>
                   <ChevronLeft className="w-4 h-4 rtl:rotate-0 ltr:rotate-180" />
@@ -419,7 +455,7 @@ export default function SessionsAdminPage() {
             {/* Real File Upload Section */}
             <div className="p-6 rounded-3xl glass-panel border space-y-3">
               <h3 className="text-sm font-extrabold text-white flex items-center gap-2">
-                <FileText className="w-4 h-4 text-brand-400" />
+                <FileText className="w-4 h-4 text-emerald-400" />
                 <span>رفع ملزمة المحاضرة الحقيقية (PDF/Slides)</span>
               </h3>
               <FileUpload
@@ -453,7 +489,7 @@ export default function SessionsAdminPage() {
                           <img src={st.avatar} alt={st.name} className="w-7 h-7 rounded-lg object-cover" />
                           <span className="text-xs font-bold text-slate-200 truncate max-w-[120px]">{st.name}</span>
                         </div>
-                        <span className={`text-[11px] font-mono font-bold ${isFinished ? 'text-emerald-400' : 'text-brand-400'}`}>
+                        <span className={`text-[11px] font-mono font-bold ${isFinished ? 'text-emerald-400' : 'text-emerald-400'}`}>
                           شريحة {pos} / {slides.length}
                         </span>
                       </div>
@@ -461,7 +497,7 @@ export default function SessionsAdminPage() {
                       <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
                         <div
                           className={`h-full transition-all duration-500 rounded-full ${
-                            isFinished ? 'bg-emerald-500' : 'bg-brand-500'
+                            isFinished ? 'bg-emerald-500' : 'bg-emerald-500'
                           }`}
                           style={{ width: `${(pos / (slides.length || 1)) * 100}%` }}
                         />
@@ -477,10 +513,56 @@ export default function SessionsAdminPage() {
         </div>
       )}
 
+      {/* --- CONFIRM DELETE SESSION MODAL --- */}
+      <AnimatePresence>
+        {deleteConfirmSession && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md text-white">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="max-w-md w-full p-6 rounded-3xl bg-slate-900 border border-rose-500/40 shadow-2xl space-y-5"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-rose-500/20 border border-rose-500/40 text-rose-400 flex items-center justify-center font-bold text-xl shrink-0">
+                  <AlertTriangle className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-base font-extrabold text-white">تأكيد مسح المحاضرة نهائياً 🗑️</h3>
+                  <p className="text-xs text-rose-300 mt-0.5 font-bold">{deleteConfirmSession.title}</p>
+                </div>
+              </div>
+
+              <p className="text-xs text-slate-300 leading-relaxed bg-slate-950 p-3.5 rounded-2xl border border-slate-800">
+                سيتم حذف هذه المحاضرة نهائياً مع كافة كشوف تسجيل الحضور وسلايدات العرض المرتبطة بها. هل أنت متأكد من الحذف؟
+              </p>
+
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setDeleteConfirmSession(null)}
+                  className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs transition"
+                >
+                  إلغاء
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmDelete}
+                  className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-extrabold text-xs shadow-lg shadow-rose-500/30 transition flex items-center gap-1.5"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  <span>نعم، مسح المحاضرة 🗑️</span>
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       {/* --- CREATE NEW SESSION MODAL --- */}
       <AnimatePresence>
         {isCreateModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md overflow-y-auto">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md overflow-y-auto text-white">
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -488,7 +570,7 @@ export default function SessionsAdminPage() {
               className="max-w-2xl w-full p-6 rounded-3xl bg-slate-900 border border-emerald-500/30 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto"
             >
               <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                <h3 className="text-base font-extrabold text-white">إنشاء جلسة/محاضرة تعليمية جديدة</h3>
+                <h3 className="text-base font-extrabold">إنشاء جلسة/محاضرة تعليمية جديدة</h3>
                 <button onClick={() => setIsCreateModalOpen(false)} className="p-1.5 text-slate-400 hover:text-white">
                   <X className="w-5 h-5" />
                 </button>
@@ -517,14 +599,18 @@ export default function SessionsAdminPage() {
                       className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white"
                     />
                   </div>
+
                   <div className="space-y-1">
-                    <label className="text-slate-300">الصف الدراسي</label>
-                    <input
-                      type="text"
+                    <label className="text-slate-300">الصف الدراسي المستهدف</label>
+                    <select
                       value={grade}
                       onChange={(e) => setGrade(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white"
-                    />
+                      className="w-full px-2 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-[11px]"
+                    >
+                      <option value="الصف الأول الثانوي (Grade 10)">الصف الأول الثانوي (Grade 10)</option>
+                      <option value="الصف الثاني الثانوي (Grade 11)">الصف الثاني الثانوي (Grade 11)</option>
+                      <option value="الصف الثالث الثانوي (Grade 12)">الصف الثالث الثانوي (Grade 12)</option>
+                    </select>
                   </div>
                 </div>
 
