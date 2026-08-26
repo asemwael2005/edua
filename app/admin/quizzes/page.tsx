@@ -37,17 +37,7 @@ export default function QuizzesAdminPage() {
   const [quizStart, setQuizStart] = useState(new Date().toISOString().slice(0, 16));
   const [quizEnd, setQuizEnd] = useState(new Date(Date.now() + 86400000 * 3).toISOString().slice(0, 16));
 
-  const [questions, setQuestions] = useState<Question[]>([
-    {
-      id: 'q_new_1',
-      text: 'إذا كان مميز المعادلة التربيعية س² - 6س + ك = 0 يقع في حقيقيين متساويين، فإن قيمة ك تساوي:',
-      type: 'mcq',
-      options: ['9', '6', '36', '-9'],
-      correctAnswer: 0,
-      explanation: 'المميز ب² - 4أ جـ = 0  =>  (-6)² - 4(1)(ك) = 0  =>  36 - 4ك = 0  =>  ك = 9.',
-      points: 5,
-    },
-  ]);
+  const [questions, setQuestions] = useState<Question[]>([]);
 
   // Question Creator Temp State
   const [tempQText, setTempQText] = useState('');
@@ -99,6 +89,7 @@ export default function QuizzesAdminPage() {
 
     setIsCreateModalOpen(false);
     setQuizTitle('');
+    setQuestions([]);
   };
 
   return (
@@ -253,6 +244,28 @@ export default function QuizzesAdminPage() {
                     />
                   </div>
                 </div>
+
+                {/* Added Questions List Preview */}
+                {questions.length > 0 && (
+                  <div className="space-y-2">
+                    <h4 className="font-extrabold text-slate-300">أسئلة الاختبار المضافة حتى الآن ({questions.length}):</h4>
+                    <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
+                      {questions.map((q, idx) => (
+                        <div key={q.id || idx} className="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between text-xs">
+                          <span className="font-bold text-white truncate max-w-[80%]">س {idx + 1}: {q.text}</span>
+                          <button
+                            type="button"
+                            onClick={() => setQuestions(questions.filter((_, i) => i !== idx))}
+                            className="p-1 rounded-lg bg-rose-500/20 text-rose-400 hover:bg-rose-500/40 transition"
+                            title="حذف هذا السؤال"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {/* Question Creator Widget */}
                 <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-3">
