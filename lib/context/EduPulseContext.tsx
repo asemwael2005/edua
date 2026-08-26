@@ -88,10 +88,13 @@ interface EduPulseContextType {
   deleteQuiz: (quizId: string) => void;
   submitQuiz: (submission: Omit<QuizSubmission, 'id' | 'submittedAt'>) => void;
   createAssignment: (assignment: Omit<Assignment, 'id' | 'createdAt'>) => void;
+  deleteAssignment: (assignmentId: string) => void;
   submitAssignment: (assignmentId: string, studentId: string, content: string) => void;
   gradeSubmission: (submissionId: string, score: number, feedback: string) => void;
   updateCurriculumMilestone: (milestone: CurriculumMilestone) => void;
+  deleteCurriculumMilestone: (milestoneId: string) => void;
   addSessionFeedback: (feedback: Omit<SessionFeedback, 'id' | 'submittedAt'>) => void;
+  deleteSessionFeedback: (feedbackId: string) => void;
   addVideo: (videoData: Omit<RecordedVideo, 'id' | 'createdAt' | 'viewsCount'>) => void;
   deleteVideo: (videoId: string) => void;
   updateLiveStream: (sessionId: string, isLive: boolean, meetingUrl: string) => void;
@@ -632,6 +635,16 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     showToast(language === 'ar' ? 'تم إسناد الواجب بنجاح' : 'Assignment created');
   };
 
+  const deleteAssignment = (assignmentId: string) => {
+    const updatedAsgns = assignments.filter((a) => a.id !== assignmentId);
+    const updatedSubs = assignmentSubmissions.filter((s) => s.assignmentId !== assignmentId);
+    setAssignments(updatedAsgns);
+    setAssignmentSubmissions(updatedSubs);
+    saveState('assignments', updatedAsgns);
+    saveState('asgn_subs', updatedSubs);
+    showToast(language === 'ar' ? 'تم حذف الواجب الدراسي بنجاح 🗑️' : 'Assignment deleted');
+  };
+
   const submitAssignment = (assignmentId: string, studentId: string, content: string) => {
     const existingIndex = assignmentSubmissions.findIndex(
       (s) => s.assignmentId === assignmentId && s.studentId === studentId
@@ -689,6 +702,13 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setCurriculum(updated);
     saveState('curriculum', updated);
     showToast(language === 'ar' ? 'تم تحديث وحدة المنهج الدراسي' : 'Curriculum updated');
+  };
+
+  const deleteCurriculumMilestone = (milestoneId: string) => {
+    const updated = curriculum.filter((c) => c.id !== milestoneId);
+    setCurriculum(updated);
+    saveState('curriculum', updated);
+    showToast(language === 'ar' ? 'تم حذف وحدة المنهج الدراسي بنجاح 🗑️' : 'Curriculum deleted');
   };
 
   const [videos, setVideos] = useState<RecordedVideo[]>(initialVideos);
@@ -761,6 +781,13 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setFeedback(updated);
     saveState('feedback', updated);
     showToast(language === 'ar' ? 'شكراً لك! تم تسليم تقييمك بنجاح' : 'Thank you! Review submitted');
+  };
+
+  const deleteSessionFeedback = (feedbackId: string) => {
+    const updated = feedback.filter((f) => f.id !== feedbackId);
+    setFeedback(updated);
+    saveState('feedback', updated);
+    showToast(language === 'ar' ? 'تم حذف تقييم الطالب بنجاح 🗑️' : 'Feedback deleted');
   };
 
   const resetToDefaultData = () => {
@@ -866,10 +893,13 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         deleteQuiz,
         submitQuiz,
         createAssignment,
+        deleteAssignment,
         submitAssignment,
         gradeSubmission,
         updateCurriculumMilestone,
+        deleteCurriculumMilestone,
         addSessionFeedback,
+        deleteSessionFeedback,
         addVideo,
         deleteVideo,
         updateLiveStream,
