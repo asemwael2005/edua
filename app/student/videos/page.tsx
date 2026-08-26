@@ -19,8 +19,10 @@ export default function StudentVideosPage() {
   // Filter Videos by student's grade level
   const filteredVideos = videos.filter((v) => isMatchingGrade(v.grade, currentStudent.grade));
 
-  // Check if live stream is active globally or for student grade
-  const isLiveActive = activeLiveStream?.isLive || sessions.some((s) => s.isLive);
+  // Check if live stream is active for this student's specific grade level
+  const isLiveActive =
+    (activeLiveStream?.isLive && isMatchingGrade(activeLiveStream.grade, currentStudent.grade)) ||
+    sessions.some((s) => s.isLive && isMatchingGrade(s.grade, currentStudent.grade));
   const rawLiveUrl = activeLiveStream?.meetingUrl || sessions.find((s) => s.isLive)?.liveMeetingUrl || '';
   const liveUrl = rawLiveUrl ? normalizeAndValidateUrl(rawLiveUrl) : null;
   const liveTitle = activeLiveStream?.title || sessions.find((s) => s.isLive)?.title || 'محاضرة تفاعلية حية الآن 🔴';

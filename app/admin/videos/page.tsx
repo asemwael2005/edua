@@ -93,9 +93,21 @@ export default function AdminVideosPage() {
       return;
     }
 
-    // 2. Update session state & LocalStorage
-    const targetId = selectedSessionId || sessions[0]?.id || 'all';
-    updateLiveStream(targetId, true, validUrl);
+    // 2. Determine target grade & title
+    const selectedSession = sessions.find((s) => s.id === selectedSessionId);
+    let targetGrade = 'all';
+    let liveTitle = 'بث مباشر تفاعلي أونلاين 🔴';
+
+    if (selectedSession) {
+      targetGrade = selectedSession.grade;
+      liveTitle = selectedSession.title;
+    } else if (selectedSessionId.startsWith('grade_')) {
+      targetGrade = selectedSessionId.replace('grade_', '');
+      liveTitle = `بث مباشر لـ (${targetGrade}) 🔴`;
+    }
+
+    const targetId = selectedSessionId || 'all';
+    updateLiveStream(targetId, true, validUrl, targetGrade, liveTitle);
 
     // 3. Open meeting link in new tab safely
     if (openInNewTab) {
@@ -228,10 +240,13 @@ export default function AdminVideosPage() {
               onChange={(e) => setSelectedSessionId(e.target.value)}
               className="w-full p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white cursor-pointer focus:border-rose-500 focus:outline-none"
             >
-              <option value="all">جميع الطلاب والصفوف 🌐 (أونلاين لجميع الطلاب)</option>
+              <option value="all">جميع الطلاب والصفوف 🌐 (أونلاين لجميع المراحل)</option>
+              <option value="grade_الصف الأول الثانوي (Grade 10)">الصف الأول الثانوي (Grade 10) 🥇</option>
+              <option value="grade_الصف الثاني الثانوي (Grade 11)">الصف الثاني الثانوي (Grade 11) 🥈</option>
+              <option value="grade_الصف الثالث الثانوي (Grade 12)">الصف الثالث الثانوي (Grade 12) 🥉</option>
               {sessions.map((s) => (
                 <option key={s.id} value={s.id}>
-                  {s.title} ({s.grade}) {s.isLive ? '🔴' : ''}
+                  محاضرة: {s.title} ({s.grade}) {s.isLive ? '🔴' : ''}
                 </option>
               ))}
             </select>

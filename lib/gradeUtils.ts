@@ -3,7 +3,7 @@
  * Ensures a Grade 10 student only sees Grade 10 materials.
  */
 export function isMatchingGrade(itemGrade?: string, studentGrade?: string): boolean {
-  if (!itemGrade || !studentGrade) return true;
+  if (!itemGrade || itemGrade === 'all' || !studentGrade) return true;
 
   const cleanItem = itemGrade.toLowerCase().trim();
   const cleanStudent = studentGrade.toLowerCase().trim();

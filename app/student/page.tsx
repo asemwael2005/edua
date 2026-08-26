@@ -34,6 +34,7 @@ export default function StudentDashboardPage() {
     curriculum,
     assignmentSubmissions,
     quizSubmissions,
+    activeLiveStream,
     language,
   } = useEduPulse();
 
@@ -114,8 +115,9 @@ export default function StudentDashboardPage() {
           </div>
         </motion.div>
 
-        {/* 🔴 LIVE STREAM BANNER IF ACTIVE */}
-        {sessions.some((s) => s.isLive) && (
+        {/* 🔴 LIVE STREAM BANNER IF ACTIVE FOR STUDENT'S GRADE */}
+        {((activeLiveStream?.isLive && isMatchingGrade(activeLiveStream.grade, currentStudent.grade)) ||
+          sessions.some((s) => s.isLive && isMatchingGrade(s.grade, currentStudent.grade))) && (
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -128,10 +130,12 @@ export default function StudentDashboardPage() {
                 </div>
                 <div>
                   <span className="px-2.5 py-0.5 rounded-md bg-rose-600 text-white text-[10px] font-mono font-bold animate-pulse">
-                    مباشر الآن 🔴 LIVE
+                    مباشر الآن 🔴 LIVE STREAM
                   </span>
-                  <h3 className="text-lg font-extrabold text-white mt-1">البث المباشر أونلاين يعمل الآن!</h3>
-                  <p className="text-xs text-slate-300">بدأ المعلم المحاضرة الحية المباشرة الآن. اضغط للانضمام الفوري للغرفة.</p>
+                  <h3 className="text-lg font-extrabold text-white mt-1">
+                    {activeLiveStream?.title || sessions.find((s) => s.isLive)?.title || 'البث المباشر أونلاين يعمل الآن!'}
+                  </h3>
+                  <p className="text-xs text-slate-300">بدأ المعلم المحاضرة الحية المباشرة المخصصة لصفك الدراسي الآن. اضغط للانضمام الفوري للغرفة.</p>
                 </div>
               </div>
 
@@ -139,8 +143,11 @@ export default function StudentDashboardPage() {
                 type="button"
                 onClick={() => {
                   const liveSess = sessions.find((s) => s.isLive);
-                  const validUrl = liveSess?.liveMeetingUrl ? normalizeAndValidateUrl(liveSess.liveMeetingUrl) : 'https://meet.google.com/abc-defg-hij';
-                  if (validUrl) window.open(validUrl, '_blank', 'noopener,noreferrer');
+                  const rawUrl = activeLiveStream?.meetingUrl || liveSess?.liveMeetingUrl || '';
+                  const validUrl = rawUrl ? normalizeAndValidateUrl(rawUrl) : null;
+                  if (validUrl) {
+                    window.open(validUrl, '_blank', 'noopener,noreferrer');
+                  }
                 }}
                 className="px-6 py-3 rounded-2xl bg-rose-600 hover:bg-rose-500 text-white font-black text-xs shadow-xl shadow-rose-500/30 flex items-center gap-2 shrink-0 transition"
               >
