@@ -6,6 +6,7 @@ import { BanShield } from '@/components/BanShield';
 import { RecordedVideo } from '@/types/edupulse';
 import { isMatchingGrade } from '@/lib/gradeUtils';
 import { normalizeAndValidateUrl } from '@/app/admin/videos/page';
+import { LiveStreamBanner } from '@/components/LiveStreamBanner';
 import { Video, Radio, Play, Clock, Eye, Sparkles, ExternalLink, X, Film } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -57,40 +58,8 @@ export default function StudentVideosPage() {
           </span>
         </div>
 
-        {/* 🔴 LIVE BROADCAST ALERT FOR STUDENTS */}
-        {isLiveActive && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="p-6 rounded-3xl bg-gradient-to-r from-rose-950 via-slate-900 to-red-950 border border-rose-500/50 shadow-2xl space-y-4 glow-rose"
-          >
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-rose-600/90 text-white flex items-center justify-center font-bold animate-pulse shadow-lg">
-                  <Radio className="w-6 h-6" />
-                </div>
-                <div>
-                  <span className="px-2.5 py-0.5 rounded-md bg-rose-600 text-white text-[10px] font-mono font-bold animate-pulse">
-                    مباشر الآن 🔴 LIVE STREAM
-                  </span>
-                  <h3 className="text-lg font-extrabold text-white mt-1">{liveTitle}</h3>
-                  <p className="text-xs text-slate-300">بدأ المعلم البث المباشر المخصص للطلاب الآن. اضغط للانضمام مباشرة للقاعة الحية.</p>
-                </div>
-              </div>
-
-              {liveUrl && (
-                <button
-                  type="button"
-                  onClick={handleJoinLive}
-                  className="px-6 py-3 rounded-2xl bg-rose-600 hover:bg-rose-500 text-white font-black text-xs shadow-xl shadow-rose-500/30 flex items-center gap-2 shrink-0 transition"
-                >
-                  <ExternalLink className="w-4 h-4" />
-                  <span>انضمام للبث المباشر الآن 🚀</span>
-                </button>
-              )}
-            </div>
-          </motion.div>
-        )}
+        {/* 🔴 LIVE BROADCAST BANNER WITH CLEAR MEETING URL */}
+        <LiveStreamBanner />
 
         {/* 📹 RECORDED LECTURES LIBRARY */}
         <div className="space-y-4">

@@ -30,7 +30,7 @@ export interface DatabaseSchema {
 
 const DB_FILE_PATH = path.join(process.cwd(), 'data', 'database.json');
 
-// Get default initial database state (100% clean for production)
+// Get default initial database state
 function getDefaultDatabaseState(): DatabaseSchema {
   return {
     students: [],
@@ -55,17 +55,14 @@ function getDefaultDatabaseState(): DatabaseSchema {
 // In-memory fallback cache for serverless environments (Vercel)
 let inMemoryDB: DatabaseSchema | null = null;
 
-// Read Database
+// Read Database - Always prioritizing disk data to preserve registered students 100%
 export function readDatabase(): DatabaseSchema {
   try {
-    if (inMemoryDB) {
-      return inMemoryDB;
-    }
-
     if (fs.existsSync(DB_FILE_PATH)) {
       const fileContent = fs.readFileSync(DB_FILE_PATH, 'utf-8');
       const parsed = JSON.parse(fileContent);
-      inMemoryDB = {
+      
+      const dbState: DatabaseSchema = {
         students: Array.isArray(parsed.students) ? parsed.students : [],
         sessions: Array.isArray(parsed.sessions) ? parsed.sessions : [],
         quizzes: Array.isArray(parsed.quizzes) ? parsed.quizzes : [],
@@ -83,10 +80,25 @@ export function readDatabase(): DatabaseSchema {
           meetingUrl: '',
         },
       };
-      return inMemoryDB!;
+
+      // Merge with in-memory DB if memory has unsaved students
+      if (inMemoryDB && Array.isArray(inMemoryDB.students)) {
+        inMemoryDB.students.forEach((memStudent) => {
+          if (!dbState.students.some((s) => s.id === memStudent.id || (s.email && memStudent.email && s.email.toLowerCase() === memStudent.email.toLowerCase()))) {
+            dbState.students.push(memStudent);
+          }
+        });
+      }
+
+      inMemoryDB = dbState;
+      return dbState;
     }
   } catch (error) {
-    console.warn('Could not read db file, using default state:', error);
+    console.warn('Could not read db file, falling back to memory/default:', error);
+  }
+
+  if (inMemoryDB) {
+    return inMemoryDB;
   }
 
   inMemoryDB = getDefaultDatabaseState();
