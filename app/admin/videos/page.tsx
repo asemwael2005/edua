@@ -51,24 +51,26 @@ export const normalizeAndValidateUrl = (url: string): string | null => {
 };
 
 export default function AdminVideosPage() {
-  const { dict, videos, addVideo, deleteVideo, sessions, updateLiveStream, showToast } = useEduPulse();
+  const { dict, videos, addVideo, deleteVideo, sessions, activeLiveStream, updateLiveStream, showToast } = useEduPulse();
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [previewVideo, setPreviewVideo] = useState<RecordedVideo | null>(null);
 
   // Live Stream Controls State
   const [selectedSessionId, setSelectedSessionId] = useState<string>(sessions[0]?.id || 'all');
-  const [meetingUrl, setMeetingUrl] = useState<string>('https://meet.google.com/abc-defg-hij');
+  const [meetingUrl, setMeetingUrl] = useState<string>(activeLiveStream?.meetingUrl || 'https://meet.google.com/abc-defg-hij');
 
-  // Sync selected session's live URL whenever selection or sessions array changes
+  // Sync selected session's live URL whenever selection or activeLiveStream changes
   const selectedSession = sessions.find((s) => s.id === selectedSessionId);
-  const isLiveActive = sessions.some((s) => s.isLive);
+  const isLiveActive = activeLiveStream?.isLive || sessions.some((s) => s.isLive);
 
   useEffect(() => {
     if (selectedSession && selectedSession.liveMeetingUrl) {
       setMeetingUrl(selectedSession.liveMeetingUrl);
+    } else if (activeLiveStream && activeLiveStream.meetingUrl) {
+      setMeetingUrl(activeLiveStream.meetingUrl);
     }
-  }, [selectedSessionId, sessions]);
+  }, [selectedSessionId, sessions, activeLiveStream]);
 
   // New Video Form State
   const [title, setTitle] = useState('');
