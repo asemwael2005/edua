@@ -213,46 +213,42 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   }, []);
 
-  // Fetch server-stored students on mount
+  // Helper to sync changes directly with Server Database
+  const syncDB = (action: 'create' | 'update' | 'delete' | 'toggle', table: string, payload: any) => {
+    const body: any = { action, table };
+    if (action === 'delete' || action === 'toggle') {
+      body.id = payload;
+    } else {
+      body.item = payload;
+    }
+
+    fetch('/api/db', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    }).catch((e) => console.warn('Server DB Mutation warning:', e));
+  };
+
+  // Fetch real server Database on mount
   useEffect(() => {
-    fetch('/api/admin/students')
+    fetch('/api/db')
       .then((res) => res.json())
       .then((data) => {
-        if (data && Array.isArray(data.students) && data.students.length > 0) {
-          setStudents((prev) => {
-            const mergedMap = new Map<string, Student>();
-            data.students.forEach((s: Student) => mergedMap.set(s.id, s));
-            prev.forEach((s: Student) => mergedMap.set(s.id, s));
-            return Array.from(mergedMap.values());
-          });
+        if (data && data.success && data.db) {
+          const db = data.db;
+          if (Array.isArray(db.students)) setStudents(db.students);
+          if (Array.isArray(db.sessions)) setSessions(db.sessions);
+          if (Array.isArray(db.quizzes)) setQuizzes(db.quizzes);
+          if (Array.isArray(db.assignments)) setAssignments(db.assignments);
+          if (Array.isArray(db.curriculum)) setCurriculum(db.curriculum);
+          if (Array.isArray(db.feedback)) setFeedback(db.feedback);
+          if (Array.isArray(db.videos)) setVideos(db.videos);
+          if (Array.isArray(db.quizSubmissions)) setQuizSubmissions(db.quizSubmissions);
+          if (Array.isArray(db.assignmentSubmissions)) setAssignmentSubmissions(db.assignmentSubmissions);
+          if (Array.isArray(db.gradeLogs)) setGradeLogs(db.gradeLogs);
         }
       })
-      .catch(() => {});
-
-    // Fetch server-stored quizzes
-    fetch('/api/admin/quizzes')
-      .then((res) => res.json())
-      .then((data) => {
-        if (data && Array.isArray(data.quizzes)) {
-          setQuizzes((prev) => {
-            const mergedMap = new Map<string, Quiz>();
-            data.quizzes.forEach((q: Quiz) => mergedMap.set(q.id, q));
-            prev.forEach((q: Quiz) => mergedMap.set(q.id, q));
-            return Array.from(mergedMap.values());
-          });
-        }
-      })
-      .catch(() => {});
-
-    // Fetch server-stored videos
-    fetch('/api/admin/videos')
-      .then((res) => res.json())
-      .then((data) => {
-        if (data && Array.isArray(data.videos)) {
-          setVideos(data.videos);
-        }
-      })
-      .catch(() => {});
+      .catch((err) => console.warn('Server Database sync warning:', err));
   }, []);
 
   // Auto-sync session from server cookie on mount
@@ -358,13 +354,7 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setStudents(updated);
     saveState('students', updated);
 
-    // Sync to server-side store
-    fetch('/api/admin/students', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(newStudent),
-    }).catch(() => {});
-
+    syncDB('create', 'students', newStudent);
     showToast(language === 'ar' ? 'تمت إضافة الطالب بنجاح' : 'Student added successfully');
   };
 
@@ -373,13 +363,7 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setStudents(updated);
     saveState('students', updated);
 
-    // Sync to server-side store
-    fetch('/api/admin/students', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(updatedSt),
-    }).catch(() => {});
-
+    syncDB('update', 'students', updatedSt);
     showToast(language === 'ar' ? 'تم تحديث بيانات الطالب' : 'Student details updated');
   };
 
@@ -388,18 +372,19 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setStudents(updated);
     saveState('students', updated);
 
-    // Sync to server-side store
-    fetch(`/api/admin/students?id=${studentId}`, {
-      method: 'DELETE',
-    }).catch(() => {});
-
+    syncDB('delete', 'students', studentId);
     showToast(language === 'ar' ? 'تم حذف حساب الطالب نهائياً من المنصة' : 'Student deleted successfully', 'error');
   };
 
   const applyBan = (studentId: string, banDetails: BanDetails) => {
-    const updated = students.map((s) => (s.id === studentId ? { ...s, banDetails } : s));
+    const target = students.find((s) => s.id === studentId);
+    if (!target) return;
+    const updatedSt = { ...target, banDetails };
+    const updated = students.map((s) => (s.id === studentId ? updatedSt : s));
     setStudents(updated);
     saveState('students', updated);
+
+    syncDB('update', 'students', updatedSt);
     showToast(
       language === 'ar'
         ? `تم تطبيق الحظر على الطالب بنجاح (${banDetails.type === 'perm' ? 'دائم' : 'مؤقت'})`
@@ -409,14 +394,14 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const liftBan = (studentId: string) => {
-    const updated = students.map((s) => {
-      if (s.id === studentId && s.banDetails) {
-        return { ...s, banDetails: { ...s.banDetails, active: false } };
-      }
-      return s;
-    });
+    const target = students.find((s) => s.id === studentId);
+    if (!target || !target.banDetails) return;
+    const updatedSt = { ...target, banDetails: { ...target.banDetails, active: false } };
+    const updated = students.map((s) => (s.id === studentId ? updatedSt : s));
     setStudents(updated);
     saveState('students', updated);
+
+    syncDB('update', 'students', updatedSt);
     showToast(language === 'ar' ? 'تم إلغاء الحظر وإعادة تفعيل الحساب' : 'Ban revoked and account restored');
   };
 
@@ -530,6 +515,7 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const updated = [newSession, ...sessions];
     setSessions(updated);
     saveState('sessions', updated);
+    syncDB('create', 'sessions', newSession);
     showToast(language === 'ar' ? 'تمت إضافة المحاضرة/الجلسة التعليمية بنجاح' : 'Session created successfully');
   };
 
@@ -537,6 +523,7 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const updated = sessions.filter((s) => s.id !== sessionId);
     setSessions(updated);
     saveState('sessions', updated);
+    syncDB('delete', 'sessions', sessionId);
     showToast(language === 'ar' ? 'تم حذف المحاضرة/الجلسة التعليمية بنجاح 🗑️' : 'Session deleted successfully');
   };
 
@@ -548,14 +535,7 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const updated = [newQuiz, ...quizzes];
     setQuizzes(updated);
     saveState('quizzes', updated);
-
-    // Sync to server store
-    fetch('/api/admin/quizzes', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ quiz: newQuiz }),
-    }).catch(() => {});
-
+    syncDB('create', 'quizzes', newQuiz);
     showToast(language === 'ar' ? 'تمت إضافة الاختبار الإلكتروني' : 'Quiz created successfully');
   };
 
@@ -563,14 +543,7 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const updated = quizzes.map((q) => (q.id === quizId ? { ...q, isOpen: !q.isOpen } : q));
     setQuizzes(updated);
     saveState('quizzes', updated);
-
-    // Sync to server store
-    fetch('/api/admin/quizzes', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'toggle', quizId }),
-    }).catch(() => {});
-
+    syncDB('toggle', 'quizzes', quizId);
     const target = updated.find((q) => q.id === quizId);
     showToast(
       language === 'ar'
@@ -586,12 +559,7 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setQuizSubmissions(updatedSubmissions);
     saveState('quizzes', updatedQuizzes);
     saveState('quiz_subs', updatedSubmissions);
-
-    // Sync to server store
-    fetch(`/api/admin/quizzes?id=${quizId}`, {
-      method: 'DELETE',
-    }).catch(() => {});
-
+    syncDB('delete', 'quizzes', quizId);
     showToast(
       language === 'ar' ? 'تم حذف الاختبار الإلكتروني بنجاح 🗑️' : 'Quiz deleted successfully'
     );
@@ -632,6 +600,7 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const updated = [newAsgn, ...assignments];
     setAssignments(updated);
     saveState('assignments', updated);
+    syncDB('create', 'assignments', newAsgn);
     showToast(language === 'ar' ? 'تم إسناد الواجب بنجاح' : 'Assignment created');
   };
 
@@ -642,6 +611,7 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setAssignmentSubmissions(updatedSubs);
     saveState('assignments', updatedAsgns);
     saveState('asgn_subs', updatedSubs);
+    syncDB('delete', 'assignments', assignmentId);
     showToast(language === 'ar' ? 'تم حذف الواجب الدراسي بنجاح 🗑️' : 'Assignment deleted');
   };
 
@@ -708,6 +678,7 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const updated = curriculum.filter((c) => c.id !== milestoneId);
     setCurriculum(updated);
     saveState('curriculum', updated);
+    syncDB('delete', 'curriculum', milestoneId);
     showToast(language === 'ar' ? 'تم حذف وحدة المنهج الدراسي بنجاح 🗑️' : 'Curriculum deleted');
   };
 
@@ -723,14 +694,7 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const updated = [newVideo, ...videos];
     setVideos(updated);
     saveState('videos', updated);
-
-    // Sync to server store
-    fetch('/api/admin/videos', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ video: newVideo }),
-    }).catch(() => {});
-
+    syncDB('create', 'videos', newVideo);
     showToast(language === 'ar' ? 'تم رفع ونشر تسجيل المحاضرة بنجاح' : 'Lecture recording added');
   };
 
@@ -738,12 +702,7 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const updated = videos.filter((v) => v.id !== videoId);
     setVideos(updated);
     saveState('videos', updated);
-
-    // Sync to server store
-    fetch(`/api/admin/videos?id=${videoId}`, {
-      method: 'DELETE',
-    }).catch(() => {});
-
+    syncDB('delete', 'videos', videoId);
     showToast(language === 'ar' ? 'تم حذف تسجيل الفيديو بنجاح 🗑️' : 'Video deleted');
   };
 
@@ -780,6 +739,7 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const updated = [newFb, ...feedback];
     setFeedback(updated);
     saveState('feedback', updated);
+    syncDB('create', 'feedback', newFb);
     showToast(language === 'ar' ? 'شكراً لك! تم تسليم تقييمك بنجاح' : 'Thank you! Review submitted');
   };
 
@@ -787,6 +747,7 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const updated = feedback.filter((f) => f.id !== feedbackId);
     setFeedback(updated);
     saveState('feedback', updated);
+    syncDB('delete', 'feedback', feedbackId);
     showToast(language === 'ar' ? 'تم حذف تقييم الطالب بنجاح 🗑️' : 'Feedback deleted');
   };
 
