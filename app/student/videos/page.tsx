@@ -5,14 +5,12 @@ import { useEduPulse } from '@/lib/context/EduPulseContext';
 import { BanShield } from '@/components/BanShield';
 import { RecordedVideo } from '@/types/edupulse';
 import { isMatchingGrade } from '@/lib/gradeUtils';
-import { normalizeAndValidateUrl } from '@/lib/videoUtils';
-import { LiveStreamBanner } from '@/components/LiveStreamBanner';
 import { getEmbedVideoUrl } from '@/lib/videoUtils';
-import { Video, Radio, Play, Clock, Eye, Sparkles, ExternalLink, X, Film } from 'lucide-react';
+import { Video, Play, Eye, X, Film, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function StudentVideosPage() {
-  const { dict, videos, sessions, students, activeStudent, activeLiveStream, showToast } = useEduPulse();
+  const { videos, students, activeStudent } = useEduPulse();
   const [selectedVideo, setSelectedVideo] = useState<RecordedVideo | null>(null);
 
   const currentStudent = activeStudent || students[0];
@@ -25,50 +23,34 @@ export default function StudentVideosPage() {
     return matchB - matchA;
   });
 
-  // Check if live stream is active for this student's specific grade level
-  const isLiveActive =
-    (activeLiveStream?.isLive && isMatchingGrade(activeLiveStream.grade, currentStudent.grade)) ||
-    sessions.some((s) => s.isLive && isMatchingGrade(s.grade, currentStudent.grade));
-  const rawLiveUrl = activeLiveStream?.meetingUrl || sessions.find((s) => s.isLive)?.liveMeetingUrl || '';
-  const liveUrl = rawLiveUrl ? normalizeAndValidateUrl(rawLiveUrl) : null;
-  const liveTitle = activeLiveStream?.title || sessions.find((s) => s.isLive)?.title || 'محاضرة تفاعلية حية الآن 🔴';
-
-  const handleJoinLive = (e: React.MouseEvent) => {
-    e.preventDefault();
-    if (!liveUrl) {
-      showToast('رابط البث المباشر غير صالح أو غير متوفر حالياً', 'error');
-      return;
-    }
-    window.open(liveUrl, '_blank', 'noopener,noreferrer');
-  };
-
   return (
     <BanShield student={currentStudent}>
       <div className="space-y-8 pb-12">
-        
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
           <div>
             <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-3">
               <Video className="w-7 h-7 text-rose-500" />
-              <span>تسجيلات المحاضرات والغرفة الحية</span>
+              <span>مكتبة المحاضرات والدروس المسجلة 📹</span>
             </h1>
             <p className="text-xs text-slate-400 mt-1">
-              تعرض الفيديوهات والبث المباشر المخصص لصفك الدراسي ({currentStudent.grade})
+              مشاهدة شروحات الدروس والتسجيلات المصورة الخاصة بصفك الدراسي ({currentStudent.grade})
             </p>
           </div>
 
-          <span className="px-3 py-1.5 rounded-xl bg-rose-500/10 text-rose-400 border border-rose-500/20 text-xs font-bold font-mono self-start sm:self-auto">
+          <span className="px-3.5 py-1.5 rounded-xl bg-rose-500/10 text-rose-400 border border-rose-500/20 text-xs font-bold font-mono self-start sm:self-auto">
             {currentStudent.grade}
           </span>
         </div>
 
-        {/* 🔴 LIVE BROADCAST BANNER WITH CLEAR MEETING URL */}
-        <LiveStreamBanner />
-
         {/* 📹 RECORDED LECTURES LIBRARY */}
         <div className="space-y-4">
-          <h3 className="text-base font-extrabold text-white">مكتبة المحاضرات والدروس المسجلة ({displayedVideos.length})</h3>
+          <div className="flex items-center justify-between">
+            <h3 className="text-base font-extrabold text-white flex items-center gap-2">
+              <Film className="w-5 h-5 text-rose-400" />
+              <span>دروس الفيديو والتمارين الشارحة ({displayedVideos.length})</span>
+            </h3>
+          </div>
 
           {displayedVideos.length === 0 ? (
             <div className="p-12 text-center rounded-3xl glass-panel border space-y-3">
@@ -113,17 +95,17 @@ export default function StudentVideosPage() {
                   </div>
 
                   <div className="pt-3 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
-                    <span className="flex items-center gap-1 font-mono">
+                    <span className="flex items-center gap-1 font-mono text-[11px]">
                       <Eye className="w-3.5 h-3.5 text-slate-500" /> {vid.viewsCount} مشاهدة
                     </span>
 
                     <button
                       type="button"
                       onClick={() => setSelectedVideo(vid)}
-                      className="px-3.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs flex items-center gap-1 transition shadow"
+                      className="px-3.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs flex items-center gap-1.5 transition shadow"
                     >
                       <Play className="w-3.5 h-3.5" />
-                      <span>مشاهدة الفيديو</span>
+                      <span>مشاهدة الفيديو 🎬</span>
                     </button>
                   </div>
                 </div>
@@ -145,7 +127,7 @@ export default function StudentVideosPage() {
                 <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                   <div>
                     <h3 className="text-base font-extrabold">{selectedVideo.title}</h3>
-                    <span className="text-xs text-rose-400">{selectedVideo.grade}</span>
+                    <span className="text-xs text-rose-400 font-mono">{selectedVideo.subject} - {selectedVideo.grade}</span>
                   </div>
                   <button type="button" onClick={() => setSelectedVideo(null)} className="p-1.5 text-slate-400 hover:text-white">
                     <X className="w-5 h-5" />
@@ -174,7 +156,6 @@ export default function StudentVideosPage() {
             </div>
           )}
         </AnimatePresence>
-
       </div>
     </BanShield>
   );
