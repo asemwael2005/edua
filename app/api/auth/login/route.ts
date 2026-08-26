@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createSessionToken, setSessionCookieInResponse } from '@/lib/auth';
 import { initialStudents } from '@/lib/seedData';
 import { getGlobalStudents } from '@/lib/serverStore';
+import { readDatabase } from '@/lib/db';
 
 const SERVER_ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
 
@@ -40,25 +41,33 @@ export async function POST(request: NextRequest) {
     }
 
     if (role === 'student') {
-      if (!studentCode) {
+      if (!studentCode || !studentCode.trim()) {
         return NextResponse.json(
-          { error: 'يرجى كتابة كود الطالب أو البريد' },
+          { error: 'يرجى كتابة رقم الهاتف أو البريد الإلكتروني' },
           { status: 400 }
         );
       }
 
-      // Combine server store students, client payload students, and initial seed students
+      const query = studentCode.trim().toLowerCase();
+      const cleanPhone = query.replace(/[\s\-\(\)]/g, '');
+
+      // Combine server DB students, server store students, client payload students, and initial seed students
+      let dbStudents: any[] = [];
+      try {
+        dbStudents = readDatabase().students || [];
+      } catch (e) {}
+
       const serverStudents = getGlobalStudents();
       const clientStudents = Array.isArray(customStudents) ? customStudents : [];
-      const allStudents = [...serverStudents, ...clientStudents, ...initialStudents];
+      const allStudents = [...dbStudents, ...serverStudents, ...clientStudents, ...initialStudents];
 
       const foundStudent = allStudents.find(
         (s: any) =>
-          (s.email && s.email.toLowerCase().includes(studentCode.toLowerCase())) ||
-          (s.studentPhone && s.studentPhone.includes(studentCode)) ||
-          (s.parentPhone && s.parentPhone.includes(studentCode)) ||
-          (s.name && s.name.toLowerCase().includes(studentCode.toLowerCase())) ||
-          (s.id && s.id.toLowerCase() === studentCode.toLowerCase())
+          (s.studentPhone && s.studentPhone.replace(/[\s\-\(\)]/g, '').includes(cleanPhone)) ||
+          (s.parentPhone && s.parentPhone.replace(/[\s\-\(\)]/g, '').includes(cleanPhone)) ||
+          (s.email && s.email.toLowerCase().includes(query)) ||
+          (s.name && s.name.toLowerCase().includes(query)) ||
+          (s.id && s.id.toLowerCase() === query)
       );
 
       if (!foundStudent) {

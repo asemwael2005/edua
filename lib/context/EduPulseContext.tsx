@@ -60,6 +60,7 @@ interface EduPulseContextType {
   feedback: SessionFeedback[];
   gradeLogs: GradeLog[];
   videos: RecordedVideo[];
+  activeLiveStream: ActiveLiveStream | null;
 
   // Toast / notification state
   toastMessage: string | null;
@@ -247,6 +248,7 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           if (Array.isArray(db.quizSubmissions)) setQuizSubmissions(db.quizSubmissions);
           if (Array.isArray(db.assignmentSubmissions)) setAssignmentSubmissions(db.assignmentSubmissions);
           if (Array.isArray(db.gradeLogs)) setGradeLogs(db.gradeLogs);
+          if (db.activeLiveStream) setActiveLiveStream(db.activeLiveStream);
         }
       })
       .catch((err) => console.warn('Server Database sync warning:', err));
@@ -720,10 +722,16 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     showToast(language === 'ar' ? 'تم حذف تسجيل الفيديو بنجاح 🗑️' : 'Video deleted');
   };
 
-  const updateLiveStream = (sessionId: string, isLive: boolean, meetingUrl: string) => {
+  const [activeLiveStream, setActiveLiveStream] = useState<ActiveLiveStream>({
+    isLive: false,
+    title: 'بث مباشر تفاعلي أونلاين 🔴',
+    grade: 'all',
+    meetingUrl: '',
+  });
+
+  const updateLiveStream = (sessionId: string, isLive: boolean, meetingUrl: string, grade = 'all', title = 'بث مباشر تفاعلي أونلاين 🔴') => {
     let updated = sessions.map((s) => (s.id === sessionId ? { ...s, isLive, liveMeetingUrl: meetingUrl } : s));
 
-    // If starting live stream, ensure target or fallback session is set to live
     if (isLive) {
       const hasLive = updated.some((s) => s.isLive);
       if (!hasLive && updated.length > 0) {
@@ -733,6 +741,17 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     setSessions(updated);
     saveState('sessions', updated);
+
+    const liveState = { isLive, meetingUrl, title, grade, startedAt: isLive ? new Date().toISOString() : undefined };
+    setActiveLiveStream(liveState);
+    saveState('activeLiveStream', liveState);
+
+    fetch('/api/db', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'updateLiveStream', isLive, meetingUrl, title, grade }),
+    }).catch(() => {});
+
     showToast(
       language === 'ar'
         ? isLive

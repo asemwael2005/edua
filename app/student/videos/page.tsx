@@ -10,19 +10,20 @@ import { Video, Radio, Play, Clock, Eye, Sparkles, ExternalLink, X, Film } from 
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function StudentVideosPage() {
-  const { dict, videos, sessions, students, activeStudent, showToast } = useEduPulse();
+  const { dict, videos, sessions, students, activeStudent, activeLiveStream, showToast } = useEduPulse();
   const [selectedVideo, setSelectedVideo] = useState<RecordedVideo | null>(null);
 
   const currentStudent = activeStudent || students[0];
   if (!currentStudent) return null;
 
-  // Filter Videos and Live Broadcasts by student's grade level
+  // Filter Videos by student's grade level
   const filteredVideos = videos.filter((v) => isMatchingGrade(v.grade, currentStudent.grade));
-  const activeLiveSession = sessions.find(
-    (s) => s.isLive && isMatchingGrade(s.grade, currentStudent.grade)
-  );
 
-  const liveUrl = activeLiveSession?.liveMeetingUrl ? normalizeAndValidateUrl(activeLiveSession.liveMeetingUrl) : null;
+  // Check if live stream is active globally or for student grade
+  const isLiveActive = activeLiveStream?.isLive || sessions.some((s) => s.isLive);
+  const rawLiveUrl = activeLiveStream?.meetingUrl || sessions.find((s) => s.isLive)?.liveMeetingUrl || '';
+  const liveUrl = rawLiveUrl ? normalizeAndValidateUrl(rawLiveUrl) : null;
+  const liveTitle = activeLiveStream?.title || sessions.find((s) => s.isLive)?.title || 'محاضرة تفاعلية حية الآن 🔴';
 
   const handleJoinLive = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -55,7 +56,7 @@ export default function StudentVideosPage() {
         </div>
 
         {/* 🔴 LIVE BROADCAST ALERT FOR STUDENTS */}
-        {activeLiveSession && (
+        {isLiveActive && (
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -68,10 +69,10 @@ export default function StudentVideosPage() {
                 </div>
                 <div>
                   <span className="px-2.5 py-0.5 rounded-md bg-rose-600 text-white text-[10px] font-mono font-bold animate-pulse">
-                    مباشر الآن 🔴 LIVE
+                    مباشر الآن 🔴 LIVE STREAM
                   </span>
-                  <h3 className="text-lg font-extrabold text-white mt-1">{activeLiveSession.title}</h3>
-                  <p className="text-xs text-slate-300">بدأ المعلم البث المباشر المخصص لصفك الدراسي الآن. اضغط للانضمام مباشرة.</p>
+                  <h3 className="text-lg font-extrabold text-white mt-1">{liveTitle}</h3>
+                  <p className="text-xs text-slate-300">بدأ المعلم البث المباشر المخصص للطلاب الآن. اضغط للانضمام مباشرة للقاعة الحية.</p>
                 </div>
               </div>
 
@@ -82,7 +83,7 @@ export default function StudentVideosPage() {
                   className="px-6 py-3 rounded-2xl bg-rose-600 hover:bg-rose-500 text-white font-black text-xs shadow-xl shadow-rose-500/30 flex items-center gap-2 shrink-0 transition"
                 >
                   <ExternalLink className="w-4 h-4" />
-                  <span>انضمام للبث المباشر الآن</span>
+                  <span>انضمام للبث المباشر الآن 🚀</span>
                 </button>
               )}
             </div>

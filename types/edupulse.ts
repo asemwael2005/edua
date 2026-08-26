@@ -9,6 +9,14 @@ export interface BanDetails {
   appliedBy: string;
 }
 
+export interface ActiveLiveStream {
+  isLive: boolean;
+  title: string;
+  grade: string;
+  meetingUrl: string;
+  startedAt?: string;
+}
+
 export interface AdminUser {
   id: string;
   name: string;

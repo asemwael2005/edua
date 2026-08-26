@@ -254,7 +254,7 @@ function LoginFormContent() {
         {activeTab === 'student_login' && (
           <form onSubmit={handleLogin} className="space-y-4 text-xs font-semibold">
             <div className="space-y-1.5">
-              <label className="text-slate-300">كود الطالب أو البريد/الهاتف</label>
+              <label className="text-slate-300">رقم هاتف الطالب / ولي الأمر أو البريد الإلكتروني</label>
               <div className="relative">
                 <User className="w-4 h-4 text-slate-500 absolute ltr:left-3.5 rtl:right-3.5 top-1/2 -translate-y-1/2" />
                 <input
@@ -262,7 +262,7 @@ function LoginFormContent() {
                   required
                   value={studentCode}
                   onChange={(e) => setStudentCode(e.target.value)}
-                  placeholder="أدخل كود الطالب أو البريد..."
+                  placeholder="أدخل رقم الهاتف (مثال: 01012345678) أو البريد..."
                   className="w-full ltr:pl-10 rtl:pr-10 ltr:pr-4 rtl:pl-4 py-3 rounded-xl bg-slate-950 border border-slate-800 text-white font-mono focus:outline-none focus:border-emerald-500"
                 />
               </div>

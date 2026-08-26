@@ -11,6 +11,7 @@ import {
   AssignmentSubmission,
   QuizSubmission,
   RecordedVideo,
+  ActiveLiveStream,
 } from '@/types/edupulse';
 
 export interface DatabaseSchema {
@@ -24,6 +25,7 @@ export interface DatabaseSchema {
   quizSubmissions: QuizSubmission[];
   assignmentSubmissions: AssignmentSubmission[];
   videos: RecordedVideo[];
+  activeLiveStream: ActiveLiveStream;
 }
 
 const DB_FILE_PATH = path.join(process.cwd(), 'data', 'database.json');
@@ -41,6 +43,12 @@ function getDefaultDatabaseState(): DatabaseSchema {
     quizSubmissions: [],
     assignmentSubmissions: [],
     videos: [],
+    activeLiveStream: {
+      isLive: false,
+      title: 'بث مباشر تفاعلي أونلاين',
+      grade: 'all',
+      meetingUrl: '',
+    },
   };
 }
 
@@ -68,6 +76,12 @@ export function readDatabase(): DatabaseSchema {
         quizSubmissions: Array.isArray(parsed.quizSubmissions) ? parsed.quizSubmissions : [],
         assignmentSubmissions: Array.isArray(parsed.assignmentSubmissions) ? parsed.assignmentSubmissions : [],
         videos: Array.isArray(parsed.videos) ? parsed.videos : [],
+        activeLiveStream: parsed.activeLiveStream || {
+          isLive: false,
+          title: 'بث مباشر تفاعلي أونلاين',
+          grade: 'all',
+          meetingUrl: '',
+        },
       };
       return inMemoryDB!;
     }

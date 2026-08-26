@@ -13,8 +13,20 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { action, table, item, id } = body;
+    const { action, table, item, id, isLive, meetingUrl, title, grade } = body;
     const db = readDatabase();
+
+    if (action === 'updateLiveStream') {
+      db.activeLiveStream = {
+        isLive: Boolean(isLive),
+        meetingUrl: meetingUrl || '',
+        title: title || 'بث مباشر تفاعلي أونلاين 🔴',
+        grade: grade || 'all',
+        startedAt: isLive ? new Date().toISOString() : undefined,
+      };
+      writeDatabase(db);
+      return NextResponse.json({ success: true, db });
+    }
 
     if (!table || !(table in db)) {
       return NextResponse.json({ error: 'Invalid database table' }, { status: 400 });
