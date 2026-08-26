@@ -92,6 +92,7 @@ interface EduPulseContextType {
   updateCurriculumMilestone: (milestone: CurriculumMilestone) => void;
   addSessionFeedback: (feedback: Omit<SessionFeedback, 'id' | 'submittedAt'>) => void;
   addVideo: (videoData: Omit<RecordedVideo, 'id' | 'createdAt' | 'viewsCount'>) => void;
+  deleteVideo: (videoId: string) => void;
   updateLiveStream: (sessionId: string, isLive: boolean, meetingUrl: string) => void;
   resetToDefaultData: () => void;
   clearAllData: () => void;
@@ -650,14 +651,30 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     showToast(language === 'ar' ? 'تم رفع ونشر تسجيل المحاضرة بنجاح' : 'Lecture recording added');
   };
 
+  const deleteVideo = (videoId: string) => {
+    const updated = videos.filter((v) => v.id !== videoId);
+    setVideos(updated);
+    saveState('videos', updated);
+    showToast(language === 'ar' ? 'تم حذف تسجيل الفيديو بنجاح 🗑️' : 'Video deleted');
+  };
+
   const updateLiveStream = (sessionId: string, isLive: boolean, meetingUrl: string) => {
-    const updated = sessions.map((s) => (s.id === sessionId ? { ...s, isLive, liveMeetingUrl: meetingUrl } : s));
+    let updated = sessions.map((s) => (s.id === sessionId ? { ...s, isLive, liveMeetingUrl: meetingUrl } : s));
+
+    // If starting live stream, ensure target or fallback session is set to live
+    if (isLive) {
+      const hasLive = updated.some((s) => s.isLive);
+      if (!hasLive && updated.length > 0) {
+        updated[0] = { ...updated[0], isLive: true, liveMeetingUrl: meetingUrl };
+      }
+    }
+
     setSessions(updated);
     saveState('sessions', updated);
     showToast(
       language === 'ar'
         ? isLive
-          ? 'تم بدء البث المباشر للمحاضرة الآن 🔴'
+          ? 'تم تفعيل وإطلاق البث المباشر أونلاين لجميع الطلاب بنجاح 🔴'
           : 'تم إنهاء البث المباشر للمحاضرة'
         : isLive
         ? 'Live stream started 🔴'
@@ -784,6 +801,7 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         updateCurriculumMilestone,
         addSessionFeedback,
         addVideo,
+        deleteVideo,
         updateLiveStream,
         resetToDefaultData,
         clearAllData,

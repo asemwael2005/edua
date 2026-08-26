@@ -19,6 +19,7 @@ import {
   CheckCircle,
   ExternalLink,
   Square,
+  Film,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -50,45 +51,39 @@ export const normalizeAndValidateUrl = (url: string): string | null => {
 };
 
 export default function AdminVideosPage() {
-  const { dict, videos, addVideo, sessions, updateLiveStream, showToast } = useEduPulse();
+  const { dict, videos, addVideo, deleteVideo, sessions, updateLiveStream, showToast } = useEduPulse();
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [previewVideo, setPreviewVideo] = useState<RecordedVideo | null>(null);
 
   // Live Stream Controls State
-  const [selectedSessionId, setSelectedSessionId] = useState<string>(sessions[0]?.id || '');
-  const [meetingUrl, setMeetingUrl] = useState<string>('');
+  const [selectedSessionId, setSelectedSessionId] = useState<string>(sessions[0]?.id || 'all');
+  const [meetingUrl, setMeetingUrl] = useState<string>('https://meet.google.com/abc-defg-hij');
 
   // Sync selected session's live URL whenever selection or sessions array changes
   const selectedSession = sessions.find((s) => s.id === selectedSessionId);
-  const isLiveActive = selectedSession?.isLive || false;
+  const isLiveActive = sessions.some((s) => s.isLive);
 
   useEffect(() => {
-    if (selectedSession) {
-      setMeetingUrl(selectedSession.liveMeetingUrl || '');
+    if (selectedSession && selectedSession.liveMeetingUrl) {
+      setMeetingUrl(selectedSession.liveMeetingUrl);
     }
   }, [selectedSessionId, sessions]);
 
   // New Video Form State
   const [title, setTitle] = useState('');
   const [subject, setSubject] = useState('الرياضيات التطبيقية');
-  const [grade, setGrade] = useState('الصف الثالث الثانوي');
+  const [grade, setGrade] = useState('الصف الأول الثانوي (Grade 10)');
   const [videoUrl, setVideoUrl] = useState('');
   const [duration, setDuration] = useState('01:30:00');
   const [description, setDescription] = useState('');
 
   // Start Live Stream & Open Meeting URL in New Tab
   const handleStartLiveStream = (openInNewTab = true) => {
-    // 1. Verify lecture selected
-    if (!selectedSessionId || !selectedSession) {
-      showToast('يرجى اختيار المحاضرة أولاً', 'error');
-      return;
-    }
-
-    // 2. Retrieve & Validate URL
-    const urlToValidate = meetingUrl || selectedSession.liveMeetingUrl || '';
+    // 1. Retrieve & Validate URL
+    const urlToValidate = meetingUrl || selectedSession?.liveMeetingUrl || '';
     if (!urlToValidate.trim()) {
-      showToast('لا يوجد رابط بث مباشر لهذه المحاضرة', 'error');
+      showToast('يرجى كتابة رابط البث المباشر أولاً', 'error');
       return;
     }
 
@@ -98,10 +93,11 @@ export default function AdminVideosPage() {
       return;
     }
 
-    // 3. Update session state & LocalStorage
-    updateLiveStream(selectedSessionId, true, validUrl);
+    // 2. Update session state & LocalStorage
+    const targetId = selectedSessionId || sessions[0]?.id || 'all';
+    updateLiveStream(targetId, true, validUrl);
 
-    // 4. Open meeting link in new tab safely
+    // 3. Open meeting link in new tab safely
     if (openInNewTab) {
       window.open(validUrl, '_blank', 'noopener,noreferrer');
     }
@@ -109,22 +105,13 @@ export default function AdminVideosPage() {
 
   // Stop Live Stream
   const handleStopLiveStream = () => {
-    if (!selectedSessionId || !selectedSession) {
-      showToast('يرجى اختيار المحاضرة أولاً', 'error');
-      return;
-    }
-
-    updateLiveStream(selectedSessionId, false, meetingUrl);
+    const targetId = selectedSessionId || sessions[0]?.id || 'all';
+    updateLiveStream(targetId, false, meetingUrl);
   };
 
   // Open Live Meeting Link directly without toggling status
   const handleOpenLinkDirectly = () => {
-    if (!selectedSessionId || !selectedSession) {
-      showToast('يرجى اختيار المحاضرة أولاً', 'error');
-      return;
-    }
-
-    const validUrl = normalizeAndValidateUrl(meetingUrl || selectedSession.liveMeetingUrl || '');
+    const validUrl = normalizeAndValidateUrl(meetingUrl || selectedSession?.liveMeetingUrl || '');
     if (!validUrl) {
       showToast('رابط البث المباشر غير صالح', 'error');
       return;
@@ -163,7 +150,7 @@ export default function AdminVideosPage() {
             <Video className="w-7 h-7 text-rose-500" />
             <span>تسجيلات المحاضرات والبث المباشر</span>
           </h1>
-          <p className="text-xs text-slate-400 mt-1">إدارة غرف البث المباشر ورفع تسجيلة الفيديوهات والدروس للطلاب</p>
+          <p className="text-xs text-slate-400 mt-1">إدارة غرف البث المباشر الحية ورفع تسجيلة الفيديوهات للطلاب</p>
         </div>
 
         <button
@@ -192,11 +179,11 @@ export default function AdminVideosPage() {
                 <span>غرفة البث المباشر أونلاين (Live Stream Room)</span>
                 {isLiveActive && (
                   <span className="px-2.5 py-0.5 rounded-md bg-rose-600 text-white text-[10px] font-mono font-bold animate-pulse">
-                    مباشر 🔴 LIVE
+                    مباشر الآن 🔴 LIVE
                   </span>
                 )}
               </h3>
-              <p className="text-xs text-slate-300">بدء محاضرة تفاعلية حية وإرسال الإشعار لجميع الطلاب</p>
+              <p className="text-xs text-slate-300">بدء محاضرة تفاعلية حية وإرسال الإشعار لجميع الطلاب ليظهر في بوابتهم فوراً</p>
             </div>
           </div>
 
@@ -209,7 +196,7 @@ export default function AdminVideosPage() {
                 className="px-4 py-2.5 rounded-xl font-extrabold text-xs shadow-xl transition flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700"
               >
                 <Square className="w-4 h-4 text-rose-400" />
-                <span>إنهاء البث المباشر</span>
+                <span>إيقاف البث المباشر</span>
               </button>
             ) : (
               <button
@@ -235,21 +222,18 @@ export default function AdminVideosPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-semibold">
           <div className="space-y-1.5">
-            <label className="text-slate-300">اختر المحاضرة المرتبطة بالبث</label>
+            <label className="text-slate-300">اختر المحاضرة أو الصف المستهدف للبث</label>
             <select
               value={selectedSessionId}
               onChange={(e) => setSelectedSessionId(e.target.value)}
               className="w-full p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white cursor-pointer focus:border-rose-500 focus:outline-none"
             >
-              {sessions.length === 0 ? (
-                <option value="">لا توجد محاضرات مضافة بعد</option>
-              ) : (
-                sessions.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.title} ({s.date}) {s.isLive ? '🔴' : ''}
-                  </option>
-                ))
-              )}
+              <option value="all">جميع الطلاب والصفوف 🌐 (أونلاين لجميع الطلاب)</option>
+              {sessions.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.title} ({s.grade}) {s.isLive ? '🔴' : ''}
+                </option>
+              ))}
             </select>
           </div>
 
@@ -273,55 +257,72 @@ export default function AdminVideosPage() {
       <div className="space-y-4">
         <h3 className="text-base font-extrabold text-white">مكتبة المحاضرات والدروس المسجلة ({videos.length})</h3>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {videos.map((vid) => (
-            <div
-              key={vid.id}
-              className="p-4 rounded-3xl glass-panel border space-y-3 hover:border-rose-500/40 transition duration-300 flex flex-col justify-between"
-            >
-              <div className="space-y-3">
-                {/* Thumbnail / Video Banner */}
-                <div className="relative aspect-video rounded-2xl overflow-hidden bg-slate-950 group">
-                  <img src={vid.thumbnailUrl} alt={vid.title} className="w-full h-full object-cover group-hover:scale-105 transition duration-300" />
-                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-90 group-hover:opacity-100 transition">
-                    <button
-                      type="button"
-                      onClick={() => setPreviewVideo(vid)}
-                      className="w-12 h-12 rounded-2xl bg-rose-600/90 text-white flex items-center justify-center shadow-xl glow-rose transform group-hover:scale-110 transition"
-                    >
-                      <Play className="w-5 h-5 ltr:translate-x-0.5 rtl:-translate-x-0.5" />
-                    </button>
+        {videos.length === 0 ? (
+          <div className="p-12 text-center rounded-3xl glass-panel border space-y-3">
+            <Film className="w-12 h-12 text-slate-600 mx-auto" />
+            <h4 className="text-sm font-bold text-slate-300">لا توجد تسجيلات فيديوهات مضافة بعد</h4>
+            <p className="text-xs text-slate-500">اضغط على زر "رفع تسجيل فيديو جديد" بالأعلى ونزل أول فيديو لمادتك الدراسية</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {videos.map((vid) => (
+              <div
+                key={vid.id}
+                className="p-4 rounded-3xl glass-panel border space-y-3 hover:border-rose-500/40 transition duration-300 flex flex-col justify-between"
+              >
+                <div className="space-y-3">
+                  {/* Thumbnail / Video Banner */}
+                  <div className="relative aspect-video rounded-2xl overflow-hidden bg-slate-950 group">
+                    <img src={vid.thumbnailUrl} alt={vid.title} className="w-full h-full object-cover group-hover:scale-105 transition duration-300" />
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-90 group-hover:opacity-100 transition">
+                      <button
+                        type="button"
+                        onClick={() => setPreviewVideo(vid)}
+                        className="w-12 h-12 rounded-2xl bg-rose-600/90 text-white flex items-center justify-center shadow-xl glow-rose transform group-hover:scale-110 transition"
+                      >
+                        <Play className="w-5 h-5 ltr:translate-x-0.5 rtl:-translate-x-0.5" />
+                      </button>
+                    </div>
+                    <span className="absolute bottom-2 ltr:right-2 rtl:left-2 px-2 py-0.5 rounded-md bg-black/80 text-white text-[10px] font-mono font-bold">
+                      {vid.duration}
+                    </span>
                   </div>
-                  <span className="absolute bottom-2 ltr:right-2 rtl:left-2 px-2 py-0.5 rounded-md bg-black/80 text-white text-[10px] font-mono font-bold">
-                    {vid.duration}
-                  </span>
+
+                  <div>
+                    <div className="flex items-center justify-between text-[10px] font-bold text-rose-400 font-mono">
+                      <span>{vid.subject}</span>
+                      <span className="text-slate-400 font-sans">{vid.grade}</span>
+                    </div>
+                    <h4 className="text-sm font-extrabold text-white leading-snug line-clamp-2 mt-0.5">{vid.title}</h4>
+                  </div>
+
+                  <p className="text-xs text-slate-300 line-clamp-2">{vid.description}</p>
                 </div>
 
-                <div>
-                  <span className="text-[10px] font-bold text-rose-400 font-mono">{vid.subject}</span>
-                  <h4 className="text-sm font-extrabold text-white leading-snug line-clamp-2">{vid.title}</h4>
+                <div className="pt-3 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
+                  <button
+                    type="button"
+                    onClick={() => deleteVideo(vid.id)}
+                    className="p-1.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/40 border border-rose-500/30 text-rose-300 transition flex items-center gap-1"
+                    title="مسح هذا الفيديو"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>حذف 🗑️</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setPreviewVideo(vid)}
+                    className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-rose-300 font-bold text-xs flex items-center gap-1 transition"
+                  >
+                    <Play className="w-3.5 h-3.5" />
+                    <span>معاينة التسجيل</span>
+                  </button>
                 </div>
-
-                <p className="text-xs text-slate-300 line-clamp-2">{vid.description}</p>
               </div>
-
-              <div className="pt-3 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
-                <span className="flex items-center gap-1 font-mono">
-                  <Eye className="w-3.5 h-3.5 text-slate-500" /> {vid.viewsCount} مشاهدة
-                </span>
-
-                <button
-                  type="button"
-                  onClick={() => setPreviewVideo(vid)}
-                  className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-rose-300 font-bold text-xs flex items-center gap-1 transition"
-                >
-                  <Play className="w-3.5 h-3.5" />
-                  <span>معاينة التسجيل</span>
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* --- ADD NEW RECORDED VIDEO MODAL --- */}
@@ -332,10 +333,10 @@ export default function AdminVideosPage() {
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}
-              className="max-w-lg w-full p-6 rounded-3xl bg-slate-900 border border-rose-500/30 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto"
+              className="max-w-lg w-full p-6 rounded-3xl bg-slate-900 border border-rose-500/30 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto text-white"
             >
               <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                <h3 className="text-base font-extrabold text-white">رفع ونشر تسجيل فيديو محتوى مادة</h3>
+                <h3 className="text-base font-extrabold">رفع ونشر تسجيل فيديو محتوى مادة</h3>
                 <button type="button" onClick={() => setIsAddModalOpen(false)} className="p-1.5 text-slate-400 hover:text-white">
                   <X className="w-5 h-5" />
                 </button>
@@ -349,7 +350,7 @@ export default function AdminVideosPage() {
                     required
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    placeholder="مثال: تسجيل المحاضرة 5: التفاضل والمعدلات الزمنية"
+                    placeholder="مثال: تسجيل المحاضرة: الجبر والمعادلات التربيعية"
                     className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white focus:outline-none focus:border-rose-500"
                   />
                 </div>
@@ -389,16 +390,30 @@ export default function AdminVideosPage() {
                       className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white"
                     />
                   </div>
+
                   <div className="space-y-1">
-                    <label className="text-slate-300">مدة الفيديو</label>
-                    <input
-                      type="text"
-                      value={duration}
-                      onChange={(e) => setDuration(e.target.value)}
-                      placeholder="01:30:00"
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white font-mono"
-                    />
+                    <label className="text-slate-300">الصف الدراسي المستهدف</label>
+                    <select
+                      value={grade}
+                      onChange={(e) => setGrade(e.target.value)}
+                      className="w-full px-2 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-[11px]"
+                    >
+                      <option value="الصف الأول الثانوي (Grade 10)">الصف الأول الثانوي (Grade 10)</option>
+                      <option value="الصف الثاني الثانوي (Grade 11)">الصف الثاني الثانوي (Grade 11)</option>
+                      <option value="الصف الثالث الثانوي (Grade 12)">الصف الثالث الثانوي (Grade 12)</option>
+                    </select>
                   </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-slate-300">مدة الفيديو</label>
+                  <input
+                    type="text"
+                    value={duration}
+                    onChange={(e) => setDuration(e.target.value)}
+                    placeholder="01:30:00"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white font-mono"
+                  />
                 </div>
 
                 <div className="space-y-1">

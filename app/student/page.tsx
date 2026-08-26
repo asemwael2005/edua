@@ -4,6 +4,7 @@ import React from 'react';
 import { useEduPulse } from '@/lib/context/EduPulseContext';
 import { BanShield } from '@/components/BanShield';
 import { isMatchingGrade } from '@/lib/gradeUtils';
+import { normalizeAndValidateUrl } from '@/app/admin/videos/page';
 import {
   GraduationCap,
   CalendarCheck,
@@ -16,6 +17,8 @@ import {
   Sparkles,
   Clock,
   CheckCircle,
+  Radio,
+  ExternalLink,
 } from 'lucide-react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
@@ -90,8 +93,42 @@ export default function StudentDashboardPage() {
                 </Link>
               </div>
             )}
-          </div>
-        </motion.div>
+        {/* 🔴 LIVE STREAM BANNER IF ACTIVE */}
+        {sessions.some((s) => s.isLive) && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="p-6 rounded-3xl bg-gradient-to-r from-rose-950 via-slate-900 to-red-950 border border-rose-500/50 shadow-2xl space-y-4 glow-rose text-white"
+          >
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-rose-600/90 text-white flex items-center justify-center font-bold animate-pulse shadow-lg shrink-0">
+                  <Radio className="w-6 h-6" />
+                </div>
+                <div>
+                  <span className="px-2.5 py-0.5 rounded-md bg-rose-600 text-white text-[10px] font-mono font-bold animate-pulse">
+                    مباشر الآن 🔴 LIVE
+                  </span>
+                  <h3 className="text-lg font-extrabold text-white mt-1">البث المباشر أونلاين يعمل الآن!</h3>
+                  <p className="text-xs text-slate-300">بدأ المعلم المحاضرة الحية المباشرة الآن. اضغط للانضمام الفوري للغرفة.</p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  const liveSess = sessions.find((s) => s.isLive);
+                  const validUrl = liveSess?.liveMeetingUrl ? normalizeAndValidateUrl(liveSess.liveMeetingUrl) : 'https://meet.google.com/abc-defg-hij';
+                  if (validUrl) window.open(validUrl, '_blank', 'noopener,noreferrer');
+                }}
+                className="px-6 py-3 rounded-2xl bg-rose-600 hover:bg-rose-500 text-white font-black text-xs shadow-xl shadow-rose-500/30 flex items-center gap-2 shrink-0 transition"
+              >
+                <ExternalLink className="w-4 h-4" />
+                <span>انضمام للبث المباشر الآن 🚀</span>
+              </button>
+            </div>
+          </motion.div>
+        )}
 
         {/* Student Personal KPI Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
