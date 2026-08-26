@@ -16,6 +16,7 @@ import {
   Sparkles,
   ArrowRight,
   Check,
+  X,
   BookOpen,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -70,7 +71,11 @@ export default function InteractiveQuizPlayerPage() {
 
   const currentQuestion = targetQuiz.questions[currentQIndex];
 
+  // Select Option and LOCK choice once picked
   const handleSelectOption = (questionId: string, val: number | boolean) => {
+    // If student already selected an answer for this question, LOCK IT (prevent changing)!
+    if (selectedAnswers[questionId] !== undefined) return;
+
     setSelectedAnswers((prev) => ({
       ...prev,
       [questionId]: val,
@@ -154,7 +159,7 @@ export default function InteractiveQuizPlayerPage() {
         </div>
 
         {!isSubmitted ? (
-          /* ACTIVE EXAM WITH CLEAN INSTANT FEEDBACK */
+          /* ACTIVE EXAM WITH INSTANT RED/GREEN HIGHLIGHTS & LOCKED OPTIONS */
           <div className="space-y-6">
             
             {/* Question Navigator Pills */}
@@ -162,6 +167,7 @@ export default function InteractiveQuizPlayerPage() {
               {targetQuiz.questions.map((q, idx) => {
                 const isAns = selectedAnswers[q.id] !== undefined;
                 const isCurr = idx === currentQIndex;
+                const isRight = selectedAnswers[q.id] === q.correctAnswer;
 
                 return (
                   <button
@@ -171,7 +177,9 @@ export default function InteractiveQuizPlayerPage() {
                       isCurr
                         ? 'bg-purple-600 text-white shadow-lg ring-2 ring-purple-400'
                         : isAns
-                        ? 'bg-emerald-950 text-emerald-400 border border-emerald-500/40'
+                        ? isRight
+                          ? 'bg-emerald-950 text-emerald-400 border border-emerald-500/40'
+                          : 'bg-rose-950 text-rose-400 border border-rose-500/40'
                         : 'bg-slate-950 text-slate-400 border border-slate-800'
                     }`}
                   >
@@ -210,14 +218,17 @@ export default function InteractiveQuizPlayerPage() {
                       return (
                         <button
                           key={optIdx}
+                          disabled={hasAnsweredCurrent}
                           onClick={() => handleSelectOption(currentQuestion.id, optIdx)}
                           className={`w-full p-4 rounded-2xl border text-right rtl:text-right ltr:text-left text-xs font-extrabold transition flex items-center justify-between ${
                             isSelected
                               ? isCorrectChoice
-                                ? 'bg-emerald-950/90 border-emerald-500 text-emerald-200 shadow-lg ring-1 ring-emerald-400'
-                                : 'bg-purple-950/90 border-purple-500 text-purple-200 shadow-lg ring-1 ring-purple-400'
+                                ? 'bg-emerald-950/90 border-emerald-500 text-emerald-200 shadow-lg ring-1 ring-emerald-400 cursor-not-allowed'
+                                : 'bg-rose-950/90 border-rose-500 text-rose-200 shadow-lg ring-1 ring-rose-400 cursor-not-allowed'
                               : hasAnsweredCurrent && isCorrectChoice
-                              ? 'bg-emerald-950/40 border-emerald-500/60 text-emerald-300'
+                              ? 'bg-emerald-950/60 border-emerald-500/60 text-emerald-300 ring-1 ring-emerald-400/50 cursor-not-allowed'
+                              : hasAnsweredCurrent
+                              ? 'bg-slate-950 border-slate-900 text-slate-500 opacity-60 cursor-not-allowed'
                               : 'bg-slate-900/60 border-slate-800 text-slate-300 hover:bg-slate-800'
                           }`}
                         >
@@ -226,7 +237,9 @@ export default function InteractiveQuizPlayerPage() {
                             isSelected
                               ? isCorrectChoice
                                 ? 'bg-emerald-600 border-emerald-400 text-white'
-                                : 'bg-purple-600 border-purple-400 text-white'
+                                : 'bg-rose-600 border-rose-400 text-white'
+                              : hasAnsweredCurrent && isCorrectChoice
+                              ? 'bg-emerald-600 border-emerald-400 text-white'
                               : 'border-slate-700 text-slate-400'
                           }`}>
                             {['أ', 'ب', 'ج', 'د'][optIdx]}
@@ -241,12 +254,17 @@ export default function InteractiveQuizPlayerPage() {
                 {currentQuestion.type === 'true_false' && (
                   <div className="grid grid-cols-2 gap-4 pt-2">
                     <button
+                      disabled={hasAnsweredCurrent}
                       onClick={() => handleSelectOption(currentQuestion.id, true)}
                       className={`p-4 rounded-2xl border text-center font-extrabold text-xs transition ${
                         selectedAnswers[currentQuestion.id] === true
                           ? currentQuestion.correctAnswer === true
-                            ? 'bg-emerald-950/90 border-emerald-500 text-emerald-300 shadow-lg ring-1 ring-emerald-400'
-                            : 'bg-purple-950/90 border-purple-500 text-purple-300 shadow-lg ring-1 ring-purple-400'
+                            ? 'bg-emerald-950/90 border-emerald-500 text-emerald-300 shadow-lg ring-1 ring-emerald-400 cursor-not-allowed'
+                            : 'bg-rose-950/90 border-rose-500 text-rose-300 shadow-lg ring-1 ring-rose-400 cursor-not-allowed'
+                          : hasAnsweredCurrent && currentQuestion.correctAnswer === true
+                          ? 'bg-emerald-950/60 border-emerald-500/60 text-emerald-300 cursor-not-allowed'
+                          : hasAnsweredCurrent
+                          ? 'bg-slate-950 border-slate-900 text-slate-500 opacity-60 cursor-not-allowed'
                           : 'bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800'
                       }`}
                     >
@@ -254,12 +272,17 @@ export default function InteractiveQuizPlayerPage() {
                     </button>
 
                     <button
+                      disabled={hasAnsweredCurrent}
                       onClick={() => handleSelectOption(currentQuestion.id, false)}
                       className={`p-4 rounded-2xl border text-center font-extrabold text-xs transition ${
                         selectedAnswers[currentQuestion.id] === false
                           ? currentQuestion.correctAnswer === false
-                            ? 'bg-emerald-950/90 border-emerald-500 text-emerald-300 shadow-lg ring-1 ring-emerald-400'
-                            : 'bg-purple-950/90 border-purple-500 text-purple-300 shadow-lg ring-1 ring-purple-400'
+                            ? 'bg-emerald-950/90 border-emerald-500 text-emerald-300 shadow-lg ring-1 ring-emerald-400 cursor-not-allowed'
+                            : 'bg-rose-950/90 border-rose-500 text-rose-300 shadow-lg ring-1 ring-rose-400 cursor-not-allowed'
+                          : hasAnsweredCurrent && currentQuestion.correctAnswer === false
+                          ? 'bg-emerald-950/60 border-emerald-500/60 text-emerald-300 cursor-not-allowed'
+                          : hasAnsweredCurrent
+                          ? 'bg-slate-950 border-slate-900 text-slate-500 opacity-60 cursor-not-allowed'
                           : 'bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800'
                       }`}
                     >
@@ -268,7 +291,7 @@ export default function InteractiveQuizPlayerPage() {
                   </div>
                 )}
 
-                {/* --- ⚡ CLEAN INSTANT FEEDBACK & SOLUTION BOX (NO RED BANNERS) --- */}
+                {/* --- ⚡ INSTANT RED/GREEN EVALUATION & SOLUTION BOX --- */}
                 {hasAnsweredCurrent && (
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
@@ -276,14 +299,19 @@ export default function InteractiveQuizPlayerPage() {
                     className="p-5 rounded-2xl border border-slate-800 bg-slate-950 space-y-3 pt-4 font-sans text-xs"
                   >
                     {isCurrentCorrect ? (
-                      <div className="p-3 rounded-xl bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 font-extrabold flex items-center gap-2">
-                        <Check className="w-4 h-4 text-emerald-400 shrink-0" />
-                        <span>إجابة صحيحة (+{currentQuestion.points} نقاط) 🎉</span>
+                      <div className="p-3.5 rounded-xl bg-emerald-950/90 border border-emerald-500/50 text-emerald-300 font-extrabold flex items-center gap-2">
+                        <Check className="w-5 h-5 text-emerald-400 shrink-0" />
+                        <span>أحسنت! إجابة صحيحة ممتازة (+{currentQuestion.points} نقاط) 🎉</span>
                       </div>
                     ) : (
-                      <div className="p-3 rounded-xl bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 font-bold space-y-1">
-                        <span className="text-[10px] text-slate-400 block font-sans">الإجابة النموذجية الصحيحة 🌟:</span>
-                        <span className="font-extrabold text-sm underline">{currentCorrectText}</span>
+                      <div className="p-3.5 rounded-xl bg-rose-950/90 border border-rose-500/50 text-rose-300 font-extrabold space-y-1">
+                        <div className="flex items-center gap-2 text-rose-300">
+                          <X className="w-5 h-5 text-rose-400 shrink-0" />
+                          <span>إجابتك التي اخترتها خاطئة ❌</span>
+                        </div>
+                        <div className="text-emerald-300 text-xs font-mono pt-1">
+                          الإجابة النموذجية الصحيحة 🌟: <span className="font-bold underline">{currentCorrectText}</span>
+                        </div>
                       </div>
                     )}
 
@@ -397,7 +425,9 @@ export default function InteractiveQuizPlayerPage() {
                   return (
                     <div
                       key={q.id}
-                      className="p-6 rounded-3xl border border-slate-800 bg-slate-900/80 space-y-4 text-xs font-semibold shadow-lg"
+                      className={`p-6 rounded-3xl border space-y-4 text-xs font-semibold shadow-lg ${
+                        isCorrect ? 'bg-emerald-950/20 border-emerald-500/40' : 'bg-rose-950/20 border-rose-500/40'
+                      }`}
                     >
                       {/* Question Header & Correctness Badge */}
                       <div className="flex items-start justify-between gap-3 border-b border-slate-800/80 pb-3">
@@ -411,8 +441,9 @@ export default function InteractiveQuizPlayerPage() {
                             <span>إجابة صحيحة (+{q.points} ن)</span>
                           </span>
                         ) : (
-                          <span className="px-3 py-1 rounded-xl bg-slate-800 text-slate-300 border border-slate-700 font-bold shrink-0">
-                            درجة السؤال: 0 من {q.points}
+                          <span className="px-3 py-1 rounded-xl bg-rose-500/20 text-rose-300 border border-rose-500/40 font-bold shrink-0 flex items-center gap-1">
+                            <X className="w-4 h-4 text-rose-400" />
+                            <span>إجابة خاطئة (0 من {q.points} ن)</span>
                           </span>
                         )}
                       </div>
@@ -420,7 +451,9 @@ export default function InteractiveQuizPlayerPage() {
                       {/* Choices Comparison Box */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 font-mono text-xs">
                         {/* Student Selected Choice */}
-                        <div className="p-3 rounded-2xl bg-slate-950 border border-slate-800 text-slate-300">
+                        <div className={`p-3 rounded-2xl border ${
+                          isCorrect ? 'bg-emerald-950/40 border-emerald-500/30 text-emerald-200' : 'bg-rose-950/40 border-rose-500/30 text-rose-200'
+                        }`}>
                           <span className="text-[10px] text-slate-400 block font-sans">إجابتك التي اخترتها:</span>
                           <span className="font-bold text-sm mt-0.5 block">{studentAnswerText}</span>
                         </div>
