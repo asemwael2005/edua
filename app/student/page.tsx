@@ -38,7 +38,25 @@ export default function StudentDashboardPage() {
   } = useEduPulse();
 
   const currentStudent = activeStudent || students[0];
-  if (!currentStudent) return null;
+  if (!currentStudent) {
+    return (
+      <div className="p-12 text-center rounded-3xl glass-panel border space-y-5 text-white max-w-lg mx-auto my-12">
+        <div className="w-16 h-16 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto text-2xl font-bold">
+          <GraduationCap className="w-8 h-8" />
+        </div>
+        <div className="space-y-2">
+          <h3 className="text-xl font-extrabold">مرحباً بك في منصة إديو بلس التعليمية 👋</h3>
+          <p className="text-xs text-slate-300">المنصة فارغة وجاهزة للشخص الحقيقي. يرجى تسجيل الدخول أو إنشاء حساب جديد للوصول للمحتوى.</p>
+        </div>
+        <Link
+          href="/login"
+          className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs shadow-xl shadow-emerald-500/30 transition"
+        >
+          <span>تسجيل الدخول / إنشاء حساب جديد 🔑</span>
+        </Link>
+      </div>
+    );
+  }
 
   // Filter content strictly for the student's grade level
   const gradeStudents = students.filter((s) => isMatchingGrade(s.grade, currentStudent.grade));

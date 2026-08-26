@@ -12,17 +12,6 @@ import {
   QuizSubmission,
   RecordedVideo,
 } from '@/types/edupulse';
-import {
-  initialStudents,
-  initialSessions,
-  initialQuizzes,
-  initialAssignments,
-  initialCurriculum,
-  initialFeedback,
-  initialGradeLogs,
-  initialQuizSubmissions,
-  initialAssignmentSubmissions,
-} from '@/lib/seedData';
 
 export interface DatabaseSchema {
   students: Student[];
@@ -39,19 +28,19 @@ export interface DatabaseSchema {
 
 const DB_FILE_PATH = path.join(process.cwd(), 'data', 'database.json');
 
-// Get default initial database state
+// Get default initial database state (100% clean for production)
 function getDefaultDatabaseState(): DatabaseSchema {
   return {
-    students: initialStudents,
-    sessions: initialSessions,
-    quizzes: initialQuizzes,
-    assignments: initialAssignments,
-    curriculum: initialCurriculum,
-    feedback: initialFeedback,
-    gradeLogs: initialGradeLogs,
-    quizSubmissions: initialQuizSubmissions,
-    assignmentSubmissions: initialAssignmentSubmissions,
-    videos: [], // Initial videos start empty as requested
+    students: [],
+    sessions: [],
+    quizzes: [],
+    assignments: [],
+    curriculum: [],
+    feedback: [],
+    gradeLogs: [],
+    quizSubmissions: [],
+    assignmentSubmissions: [],
+    videos: [],
   };
 }
 
@@ -69,15 +58,15 @@ export function readDatabase(): DatabaseSchema {
       const fileContent = fs.readFileSync(DB_FILE_PATH, 'utf-8');
       const parsed = JSON.parse(fileContent);
       inMemoryDB = {
-        students: Array.isArray(parsed.students) ? parsed.students : initialStudents,
-        sessions: Array.isArray(parsed.sessions) ? parsed.sessions : initialSessions,
-        quizzes: Array.isArray(parsed.quizzes) ? parsed.quizzes : initialQuizzes,
-        assignments: Array.isArray(parsed.assignments) ? parsed.assignments : initialAssignments,
-        curriculum: Array.isArray(parsed.curriculum) ? parsed.curriculum : initialCurriculum,
-        feedback: Array.isArray(parsed.feedback) ? parsed.feedback : initialFeedback,
-        gradeLogs: Array.isArray(parsed.gradeLogs) ? parsed.gradeLogs : initialGradeLogs,
-        quizSubmissions: Array.isArray(parsed.quizSubmissions) ? parsed.quizSubmissions : initialQuizSubmissions,
-        assignmentSubmissions: Array.isArray(parsed.assignmentSubmissions) ? parsed.assignmentSubmissions : initialAssignmentSubmissions,
+        students: Array.isArray(parsed.students) ? parsed.students : [],
+        sessions: Array.isArray(parsed.sessions) ? parsed.sessions : [],
+        quizzes: Array.isArray(parsed.quizzes) ? parsed.quizzes : [],
+        assignments: Array.isArray(parsed.assignments) ? parsed.assignments : [],
+        curriculum: Array.isArray(parsed.curriculum) ? parsed.curriculum : [],
+        feedback: Array.isArray(parsed.feedback) ? parsed.feedback : [],
+        gradeLogs: Array.isArray(parsed.gradeLogs) ? parsed.gradeLogs : [],
+        quizSubmissions: Array.isArray(parsed.quizSubmissions) ? parsed.quizSubmissions : [],
+        assignmentSubmissions: Array.isArray(parsed.assignmentSubmissions) ? parsed.assignmentSubmissions : [],
         videos: Array.isArray(parsed.videos) ? parsed.videos : [],
       };
       return inMemoryDB!;
