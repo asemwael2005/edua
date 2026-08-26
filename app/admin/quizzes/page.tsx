@@ -24,10 +24,11 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function QuizzesAdminPage() {
-  const { dict, quizzes, createQuiz, toggleQuizStatus, quizSubmissions, students } = useEduPulse();
+  const { dict, quizzes, createQuiz, toggleQuizStatus, deleteQuiz, quizSubmissions, students } = useEduPulse();
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [analyticsQuiz, setAnalyticsQuiz] = useState<Quiz | null>(null);
+  const [deleteConfirmQuiz, setDeleteConfirmQuiz] = useState<Quiz | null>(null);
 
   // New Quiz Form State
   const [quizTitle, setQuizTitle] = useState('');
@@ -92,6 +93,12 @@ export default function QuizzesAdminPage() {
     setQuestions([]);
   };
 
+  const handleConfirmDelete = () => {
+    if (!deleteConfirmQuiz) return;
+    deleteQuiz(deleteConfirmQuiz.id);
+    setDeleteConfirmQuiz(null);
+  };
+
   return (
     <div className="space-y-6 pb-12">
       
@@ -102,7 +109,7 @@ export default function QuizzesAdminPage() {
             <FileCheck2 className="w-7 h-7 text-purple-500" />
             <span>{dict.quizzes.title}</span>
           </h1>
-          <p className="text-xs text-slate-400 mt-1">إنشاء الاختبارات وتحديد الإجابات النموذجية لكل صف دراسي</p>
+          <p className="text-xs text-slate-400 mt-1">إنشاء ومسح وتعديل الاختبارات الإلكترونية لكل صف دراسي</p>
         </div>
 
         <button
@@ -126,24 +133,36 @@ export default function QuizzesAdminPage() {
               className="p-6 rounded-3xl glass-panel border space-y-4 hover:border-purple-500/40 transition duration-300 flex flex-col justify-between"
             >
               <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="px-3 py-1 rounded-xl bg-purple-950/80 text-purple-300 border border-purple-500/30 text-xs font-bold font-mono">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="px-3 py-1 rounded-xl bg-purple-950/80 text-purple-300 border border-purple-500/30 text-xs font-bold font-mono truncate max-w-[60%]">
                     {quiz.subject} | {quiz.grade}
                   </span>
 
-                  {/* Open / Close Manual Toggle */}
-                  <button
-                    type="button"
-                    onClick={() => toggleQuizStatus(quiz.id)}
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-extrabold transition ${
-                      quiz.isOpen
-                        ? 'bg-emerald-950/80 text-emerald-300 border border-emerald-500/30'
-                        : 'bg-rose-950/80 text-rose-300 border border-rose-500/30'
-                    }`}
-                  >
-                    {quiz.isOpen ? <ToggleRight className="w-4 h-4 text-emerald-400" /> : <ToggleLeft className="w-4 h-4 text-rose-400" />}
-                    <span>{quiz.isOpen ? dict.quizzes.open : dict.quizzes.closed}</span>
-                  </button>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {/* Open / Close Manual Toggle */}
+                    <button
+                      type="button"
+                      onClick={() => toggleQuizStatus(quiz.id)}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-extrabold transition ${
+                        quiz.isOpen
+                          ? 'bg-emerald-950/80 text-emerald-300 border border-emerald-500/30'
+                          : 'bg-rose-950/80 text-rose-300 border border-rose-500/30'
+                      }`}
+                    >
+                      {quiz.isOpen ? <ToggleRight className="w-4 h-4 text-emerald-400" /> : <ToggleLeft className="w-4 h-4 text-rose-400" />}
+                      <span>{quiz.isOpen ? dict.quizzes.open : dict.quizzes.closed}</span>
+                    </button>
+
+                    {/* Delete Quiz Button */}
+                    <button
+                      type="button"
+                      onClick={() => setDeleteConfirmQuiz(quiz)}
+                      className="p-2 rounded-xl bg-rose-500/20 hover:bg-rose-500/40 border border-rose-500/30 text-rose-300 transition"
+                      title="مسح هذا الاختبار نهائياً"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
 
                 <h3 className="text-base font-extrabold text-white">{quiz.title}</h3>
@@ -160,25 +179,82 @@ export default function QuizzesAdminPage() {
                 </div>
               </div>
 
-              {/* Footer Analytics Shortcut */}
+              {/* Footer Analytics Shortcut & Delete */}
               <div className="pt-4 border-t border-slate-800 flex items-center justify-between">
                 <span className="text-xs text-slate-400">
                   إجمالي التسليمات: <span className="text-white font-bold font-mono">{subs.length} طالب</span>
                 </span>
 
-                <button
-                  type="button"
-                  onClick={() => setAnalyticsQuiz(quiz)}
-                  className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-purple-300 font-bold text-xs flex items-center gap-1.5 transition"
-                >
-                  <BarChart3 className="w-4 h-4" />
-                  <span>{dict.quizzes.viewSubmissions}</span>
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setAnalyticsQuiz(quiz)}
+                    className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-purple-300 font-bold text-xs flex items-center gap-1.5 transition"
+                  >
+                    <BarChart3 className="w-4 h-4" />
+                    <span>{dict.quizzes.viewSubmissions}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setDeleteConfirmQuiz(quiz)}
+                    className="px-3 py-1.5 rounded-xl bg-rose-950/60 hover:bg-rose-900/80 text-rose-300 border border-rose-500/30 font-bold text-xs flex items-center gap-1 transition"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>مسح 🗑️</span>
+                  </button>
+                </div>
               </div>
             </div>
           );
         })}
       </div>
+
+      {/* --- CONFIRM DELETE QUIZ MODAL --- */}
+      <AnimatePresence>
+        {deleteConfirmQuiz && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="max-w-md w-full p-6 rounded-3xl bg-slate-900 border border-rose-500/40 shadow-2xl space-y-5 text-white"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-rose-500/20 border border-rose-500/40 text-rose-400 flex items-center justify-center font-bold text-xl shrink-0">
+                  <AlertTriangle className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-base font-extrabold text-white">تأكيد مسح الاختبار نهائياً 🗑️</h3>
+                  <p className="text-xs text-rose-300 mt-0.5 font-bold">{deleteConfirmQuiz.title}</p>
+                </div>
+              </div>
+
+              <p className="text-xs text-slate-300 leading-relaxed bg-slate-950 p-3.5 rounded-2xl border border-slate-800">
+                سيتم حذف أسئلة هذا الاختبار وجميع نتائج وتسليمات الطلاب المرتبطة به بشكل دائم. هل أنت أصلًا متأكد من الحذف؟
+              </p>
+
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setDeleteConfirmQuiz(null)}
+                  className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs transition"
+                >
+                  إلغاء
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmDelete}
+                  className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-extrabold text-xs shadow-lg shadow-rose-500/30 transition flex items-center gap-1.5"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  <span>نعم، مسح الاختبار 🗑️</span>
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* --- CREATE QUIZ MODAL --- */}
       <AnimatePresence>

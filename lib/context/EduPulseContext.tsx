@@ -84,6 +84,7 @@ interface EduPulseContextType {
   createSession: (sessionData: Omit<Session, 'id' | 'attendance' | 'studentProgress'>) => void;
   createQuiz: (quiz: Omit<Quiz, 'id'>) => void;
   toggleQuizStatus: (quizId: string) => void;
+  deleteQuiz: (quizId: string) => void;
   submitQuiz: (submission: Omit<QuizSubmission, 'id' | 'submittedAt'>) => void;
   createAssignment: (assignment: Omit<Assignment, 'id' | 'createdAt'>) => void;
   submitAssignment: (assignmentId: string, studentId: string, content: string) => void;
@@ -525,6 +526,18 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     );
   };
 
+  const deleteQuiz = (quizId: string) => {
+    const updatedQuizzes = quizzes.filter((q) => q.id !== quizId);
+    const updatedSubmissions = quizSubmissions.filter((s) => s.quizId !== quizId);
+    setQuizzes(updatedQuizzes);
+    setQuizSubmissions(updatedSubmissions);
+    saveState('quizzes', updatedQuizzes);
+    saveState('quiz_subs', updatedSubmissions);
+    showToast(
+      language === 'ar' ? 'تم حذف الاختبار الإلكتروني بنجاح 🗑️' : 'Quiz deleted successfully'
+    );
+  };
+
   const submitQuiz = (subData: Omit<QuizSubmission, 'id' | 'submittedAt'>) => {
     const newSub: QuizSubmission = {
       ...subData,
@@ -763,6 +776,7 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         createSession,
         createQuiz,
         toggleQuizStatus,
+        deleteQuiz,
         submitQuiz,
         createAssignment,
         submitAssignment,
