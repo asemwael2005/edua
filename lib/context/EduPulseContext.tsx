@@ -99,7 +99,7 @@ interface EduPulseContextType {
   deleteSessionFeedback: (feedbackId: string) => void;
   addVideo: (videoData: Omit<RecordedVideo, 'id' | 'createdAt' | 'viewsCount'>) => void;
   deleteVideo: (videoId: string) => void;
-  updateLiveStream: (sessionId: string, isLive: boolean, meetingUrl: string) => void;
+  updateLiveStream: (sessionId: string, isLive: boolean, meetingUrl: string, grade?: string, title?: string) => void;
   resetToDefaultData: () => void;
   clearAllData: () => void;
 }

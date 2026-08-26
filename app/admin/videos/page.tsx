@@ -80,8 +80,8 @@ export default function AdminVideosPage() {
   const [duration, setDuration] = useState('01:30:00');
   const [description, setDescription] = useState('');
 
-  // Start Live Stream & Open Meeting URL in New Tab
-  const handleStartLiveStream = (openInNewTab = true) => {
+  // Start Live Stream & Launch Notification to Students
+  const handleStartLiveStream = (openInNewTab = false) => {
     // 1. Retrieve & Validate URL
     const urlToValidate = meetingUrl || selectedSession?.liveMeetingUrl || '';
     if (!urlToValidate.trim()) {
@@ -91,7 +91,7 @@ export default function AdminVideosPage() {
 
     const validUrl = normalizeAndValidateUrl(urlToValidate);
     if (!validUrl) {
-      showToast('رابط البث المباشر غير صالح', 'error');
+      showToast('رابط البث المباشر غير صالح (يرجى التأكد من كتابة الرابط بشكل صحيح)', 'error');
       return;
     }
 
@@ -111,9 +111,15 @@ export default function AdminVideosPage() {
     const targetId = selectedSessionId || 'all';
     updateLiveStream(targetId, true, validUrl, targetGrade, liveTitle);
 
-    // 3. Open meeting link in new tab safely
+    showToast('تم تفعيل وإثبات البث المباشر أونلاين لجميع الطلاب بنجاح 🔴');
+
+    // 3. Open meeting link in new tab if requested
     if (openInNewTab) {
-      window.open(validUrl, '_blank', 'noopener,noreferrer');
+      try {
+        window.open(validUrl, '_blank', 'noopener,noreferrer');
+      } catch (e) {
+        console.warn('Popup blocked by browser, but live stream is active');
+      }
     }
   };
 
@@ -215,7 +221,7 @@ export default function AdminVideosPage() {
             ) : (
               <button
                 type="button"
-                onClick={() => handleStartLiveStream(true)}
+                onClick={() => handleStartLiveStream(false)}
                 className="px-5 py-2.5 rounded-xl font-extrabold text-xs shadow-xl transition flex items-center gap-2 bg-rose-600 hover:bg-rose-500 text-white shadow-rose-500/30"
               >
                 <Radio className="w-4 h-4" />
