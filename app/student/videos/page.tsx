@@ -7,6 +7,7 @@ import { RecordedVideo } from '@/types/edupulse';
 import { isMatchingGrade } from '@/lib/gradeUtils';
 import { normalizeAndValidateUrl } from '@/app/admin/videos/page';
 import { LiveStreamBanner } from '@/components/LiveStreamBanner';
+import { getEmbedVideoUrl } from '@/lib/videoUtils';
 import { Video, Radio, Play, Clock, Eye, Sparkles, ExternalLink, X, Film } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -17,8 +18,12 @@ export default function StudentVideosPage() {
   const currentStudent = activeStudent || students[0];
   if (!currentStudent) return null;
 
-  // Filter Videos by student's grade level
-  const filteredVideos = videos.filter((v) => isMatchingGrade(v.grade, currentStudent.grade));
+  // Display all uploaded videos (showing grade-matching videos first)
+  const displayedVideos = [...videos].sort((a, b) => {
+    const matchA = isMatchingGrade(a.grade, currentStudent.grade) ? 1 : 0;
+    const matchB = isMatchingGrade(b.grade, currentStudent.grade) ? 1 : 0;
+    return matchB - matchA;
+  });
 
   // Check if live stream is active for this student's specific grade level
   const isLiveActive =
@@ -63,25 +68,23 @@ export default function StudentVideosPage() {
 
         {/* 📹 RECORDED LECTURES LIBRARY */}
         <div className="space-y-4">
-          <h3 className="text-base font-extrabold text-white flex items-center gap-2">
-            <Film className="w-5 h-5 text-rose-400" />
-            <span>مكتبة فيديوهات وصممت لـ ({currentStudent.grade})</span>
-          </h3>
+          <h3 className="text-base font-extrabold text-white">مكتبة المحاضرات والدروس المسجلة ({displayedVideos.length})</h3>
 
-          {filteredVideos.length === 0 ? (
-            <div className="p-12 text-center rounded-3xl glass-panel border space-y-2">
-              <Film className="w-10 h-10 text-slate-600 mx-auto" />
-              <h4 className="text-sm font-bold text-slate-300">لا توجد تسجيلات مرئية متاحة لصفك الدراسي حالياً</h4>
-              <p className="text-xs text-slate-500">سيتم رفع تسجيلات محاضرات {currentStudent.grade} فور انتهاء الحصص</p>
+          {displayedVideos.length === 0 ? (
+            <div className="p-12 text-center rounded-3xl glass-panel border space-y-3">
+              <Film className="w-12 h-12 text-slate-600 mx-auto" />
+              <h4 className="text-sm font-bold text-slate-300">لا توجد تسجيلات فيديوهات مضافة بعد</h4>
+              <p className="text-xs text-slate-500">سيقوم المعلم بنشر دروس فيديوهات مادتك الدراسية هنا قريباً</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredVideos.map((vid) => (
+              {displayedVideos.map((vid) => (
                 <div
                   key={vid.id}
                   className="p-4 rounded-3xl glass-panel border space-y-3 hover:border-rose-500/40 transition duration-300 flex flex-col justify-between"
                 >
                   <div className="space-y-3">
+                    {/* Thumbnail / Video Banner */}
                     <div className="relative aspect-video rounded-2xl overflow-hidden bg-slate-950 group">
                       <img src={vid.thumbnailUrl} alt={vid.title} className="w-full h-full object-cover group-hover:scale-105 transition duration-300" />
                       <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-90 group-hover:opacity-100 transition">
@@ -151,16 +154,19 @@ export default function StudentVideosPage() {
 
                 {/* Video Player Box */}
                 <div className="aspect-video rounded-2xl overflow-hidden bg-black border border-slate-800">
-                  {selectedVideo.videoUrl.includes('youtube') || selectedVideo.videoUrl.includes('embed') ? (
-                    <iframe
-                      src={selectedVideo.videoUrl}
-                      className="w-full h-full"
-                      allowFullScreen
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    />
-                  ) : (
-                    <video src={selectedVideo.videoUrl} controls className="w-full h-full" />
-                  )}
+                  {(() => {
+                    const { embedUrl, isIframe } = getEmbedVideoUrl(selectedVideo.videoUrl);
+                    return isIframe ? (
+                      <iframe
+                        src={embedUrl}
+                        className="w-full h-full border-0"
+                        allowFullScreen
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      />
+                    ) : (
+                      <video src={embedUrl} controls autoPlay className="w-full h-full object-contain" />
+                    );
+                  })()}
                 </div>
 
                 <p className="text-xs text-slate-300 leading-relaxed">{selectedVideo.description}</p>

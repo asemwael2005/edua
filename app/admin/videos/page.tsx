@@ -22,6 +22,7 @@ import {
   Film,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { getEmbedVideoUrl } from '@/lib/videoUtils';
 
 // URL Normalization & Security Validation Helper
 export const normalizeAndValidateUrl = (url: string): string | null => {
@@ -491,16 +492,19 @@ export default function AdminVideosPage() {
 
               {/* Video Player */}
               <div className="aspect-video rounded-2xl overflow-hidden bg-black border border-slate-800">
-                {previewVideo.videoUrl.includes('youtube') || previewVideo.videoUrl.includes('embed') ? (
-                  <iframe
-                    src={previewVideo.videoUrl}
-                    className="w-full h-full"
-                    allowFullScreen
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  />
-                ) : (
-                  <video src={previewVideo.videoUrl} controls className="w-full h-full" />
-                )}
+                {(() => {
+                  const { embedUrl, isIframe } = getEmbedVideoUrl(previewVideo.videoUrl);
+                  return isIframe ? (
+                    <iframe
+                      src={embedUrl}
+                      className="w-full h-full border-0"
+                      allowFullScreen
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    />
+                  ) : (
+                    <video src={embedUrl} controls autoPlay className="w-full h-full object-contain" />
+                  );
+                })()}
               </div>
 
               <p className="text-xs text-slate-300">{previewVideo.description}</p>
