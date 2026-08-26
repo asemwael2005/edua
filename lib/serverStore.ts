@@ -1,10 +1,30 @@
-import { Student, Quiz, RecordedVideo } from '@/types/edupulse';
+import { Student, Quiz, RecordedVideo, ActiveLiveStream } from '@/types/edupulse';
 import { initialStudents, initialQuizzes, initialVideos } from '@/lib/seedData';
 
 // Persistent Server-side In-memory Stores
 let globalStudentsStore: Student[] = [...initialStudents];
 let globalQuizzesStore: Quiz[] = [...initialQuizzes];
 let globalVideosStore: RecordedVideo[] = [...initialVideos];
+let globalActiveLiveStreamStore: ActiveLiveStream = {
+  isLive: false,
+  title: 'بث مباشر تفاعلي أونلاين 🔴',
+  grade: 'all',
+  meetingUrl: '',
+};
+
+// --- LIVE STREAM STORE ---
+export function getGlobalActiveLiveStream(): ActiveLiveStream {
+  return globalActiveLiveStreamStore;
+}
+
+export function setGlobalActiveLiveStream(liveData: Partial<ActiveLiveStream>): ActiveLiveStream {
+  globalActiveLiveStreamStore = {
+    ...globalActiveLiveStreamStore,
+    ...liveData,
+    startedAt: liveData.isLive ? new Date().toISOString() : undefined,
+  };
+  return globalActiveLiveStreamStore;
+}
 
 // --- STUDENTS STORE ---
 export function getGlobalStudents(): Student[] {

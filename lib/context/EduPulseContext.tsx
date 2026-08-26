@@ -254,6 +254,24 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       .catch((err) => console.warn('Server Database sync warning:', err));
   }, []);
 
+  // Real-time 5-second interval poll for Live Stream status across all student clients
+  useEffect(() => {
+    const checkLive = () => {
+      fetch('/api/live')
+        .then((res) => res.json())
+        .then((data) => {
+          if (data && data.success && data.live) {
+            setActiveLiveStream(data.live);
+          }
+        })
+        .catch(() => {});
+    };
+
+    checkLive();
+    const interval = setInterval(checkLive, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
   // Auto-sync session from server cookie on mount
   useEffect(() => {
     fetch('/api/auth/me')
@@ -746,10 +764,10 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setActiveLiveStream(liveState);
     saveState('activeLiveStream', liveState);
 
-    fetch('/api/db', {
+    fetch('/api/live', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'updateLiveStream', isLive, meetingUrl, title, grade }),
+      body: JSON.stringify(liveState),
     }).catch(() => {});
 
     showToast(
