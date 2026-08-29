@@ -56,7 +56,7 @@ function LoginFormContent() {
             : data.user.role === 'admin'
             ? '/admin'
             : '/student';
-          router.replace(dest);
+          window.location.href = dest;
         }
       })
       .catch(() => {});
@@ -114,8 +114,7 @@ function LoginFormContent() {
         if (data.user?.id) setActiveStudentId(data.user.id);
       }
 
-      router.replace(destination);
-      router.refresh();
+      window.location.href = destination;
     } catch (err) {
       setError(language === 'ar' ? 'حدث خطأ أثناء الاتصال بالخادم' : 'Server connection error');
     } finally {
@@ -174,8 +173,7 @@ function LoginFormContent() {
       }
       setUserRole('student');
 
-      router.replace('/student');
-      router.refresh();
+      window.location.href = '/student';
     } catch (err) {
       setError('حدث خطأ أثناء إنشاء حساب الطالب في السيرفر');
     } finally {

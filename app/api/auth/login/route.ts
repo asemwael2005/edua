@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
 
       const rawInput = studentCode.toString().trim();
       const normInputPhone = normalizePhone(rawInput);
-      const normInputQuery = rawInput.toLowerCase();
+      const normInputQuery = rawInput.toLowerCase().trim();
 
       // Combine server DB students, server store students, client payload students, and initial seed students
       let dbStudents: any[] = [];
