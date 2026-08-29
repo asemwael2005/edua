@@ -56,7 +56,7 @@ function getDefaultDatabaseState(): DatabaseSchema {
   };
 }
 
-// Read Database - Always prioritizing disk data & merging Node process memory to preserve registered students 100%
+// Read Database - Always prioritizing disk data & merging Node process memory to preserve data 100%
 export function readDatabase(): DatabaseSchema {
   const inMemory = globalThis.__edupulse_inmemory_db || null;
   let diskDB: DatabaseSchema = getDefaultDatabaseState();
@@ -89,9 +89,8 @@ export function readDatabase(): DatabaseSchema {
     console.warn('Could not read db file, falling back to memory/default:', error);
   }
 
-  // Merge in-memory DB with disk DB so newly added students are NEVER wiped
+  // Merge in-memory DB with disk DB so newly created items are NEVER wiped
   if (inMemory) {
-    // Merge students
     if (Array.isArray(inMemory.students)) {
       inMemory.students.forEach((memStudent) => {
         if (!diskDB.students.some((s) => s.id === memStudent.id || (s.email && memStudent.email && s.email.toLowerCase() === memStudent.email.toLowerCase()))) {
@@ -100,7 +99,30 @@ export function readDatabase(): DatabaseSchema {
       });
     }
 
-    // Merge videos
+    if (Array.isArray(inMemory.quizzes)) {
+      inMemory.quizzes.forEach((memQuiz) => {
+        if (!diskDB.quizzes.some((q) => q.id === memQuiz.id)) {
+          diskDB.quizzes.push(memQuiz);
+        }
+      });
+    }
+
+    if (Array.isArray(inMemory.assignments)) {
+      inMemory.assignments.forEach((memAsgn) => {
+        if (!diskDB.assignments.some((a) => a.id === memAsgn.id)) {
+          diskDB.assignments.push(memAsgn);
+        }
+      });
+    }
+
+    if (Array.isArray(inMemory.sessions)) {
+      inMemory.sessions.forEach((memSess) => {
+        if (!diskDB.sessions.some((s) => s.id === memSess.id)) {
+          diskDB.sessions.push(memSess);
+        }
+      });
+    }
+
     if (Array.isArray(inMemory.videos)) {
       inMemory.videos.forEach((memVid) => {
         if (!diskDB.videos.some((v) => v.id === memVid.id)) {
@@ -109,11 +131,18 @@ export function readDatabase(): DatabaseSchema {
       });
     }
 
-    // Merge quizzes
-    if (Array.isArray(inMemory.quizzes)) {
-      inMemory.quizzes.forEach((memQuiz) => {
-        if (!diskDB.quizzes.some((q) => q.id === memQuiz.id)) {
-          diskDB.quizzes.push(memQuiz);
+    if (Array.isArray(inMemory.quizSubmissions)) {
+      inMemory.quizSubmissions.forEach((memSub) => {
+        if (!diskDB.quizSubmissions.some((s) => s.id === memSub.id)) {
+          diskDB.quizSubmissions.push(memSub);
+        }
+      });
+    }
+
+    if (Array.isArray(inMemory.assignmentSubmissions)) {
+      inMemory.assignmentSubmissions.forEach((memSub) => {
+        if (!diskDB.assignmentSubmissions.some((s) => s.id === memSub.id)) {
+          diskDB.assignmentSubmissions.push(memSub);
         }
       });
     }

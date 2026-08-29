@@ -256,9 +256,42 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
               return finalStudents;
             });
           }
-          if (Array.isArray(db.sessions)) setSessions(db.sessions);
-          if (Array.isArray(db.quizzes)) setQuizzes(db.quizzes);
-          if (Array.isArray(db.assignments)) setAssignments(db.assignments);
+          if (Array.isArray(db.sessions)) {
+            setSessions((prevLocal) => {
+              const mergedMap = new Map<string, Session>();
+              db.sessions.forEach((s: Session) => mergedMap.set(s.id, s));
+              prevLocal.forEach((s: Session) => {
+                if (!mergedMap.has(s.id)) mergedMap.set(s.id, s);
+              });
+              const final = Array.from(mergedMap.values());
+              saveState('sessions', final);
+              return final;
+            });
+          }
+          if (Array.isArray(db.quizzes)) {
+            setQuizzes((prevLocal) => {
+              const mergedMap = new Map<string, Quiz>();
+              db.quizzes.forEach((q: Quiz) => mergedMap.set(q.id, q));
+              prevLocal.forEach((q: Quiz) => {
+                if (!mergedMap.has(q.id)) mergedMap.set(q.id, q);
+              });
+              const final = Array.from(mergedMap.values());
+              saveState('quizzes', final);
+              return final;
+            });
+          }
+          if (Array.isArray(db.assignments)) {
+            setAssignments((prevLocal) => {
+              const mergedMap = new Map<string, Assignment>();
+              db.assignments.forEach((a: Assignment) => mergedMap.set(a.id, a));
+              prevLocal.forEach((a: Assignment) => {
+                if (!mergedMap.has(a.id)) mergedMap.set(a.id, a);
+              });
+              const final = Array.from(mergedMap.values());
+              saveState('assignments', final);
+              return final;
+            });
+          }
           if (Array.isArray(db.curriculum)) setCurriculum(db.curriculum);
           if (Array.isArray(db.feedback)) setFeedback(db.feedback);
           if (Array.isArray(db.videos)) {
@@ -273,8 +306,30 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
               return finalVideos;
             });
           }
-          if (Array.isArray(db.quizSubmissions)) setQuizSubmissions(db.quizSubmissions);
-          if (Array.isArray(db.assignmentSubmissions)) setAssignmentSubmissions(db.assignmentSubmissions);
+          if (Array.isArray(db.quizSubmissions)) {
+            setQuizSubmissions((prevLocal) => {
+              const mergedMap = new Map<string, QuizSubmission>();
+              db.quizSubmissions.forEach((qs: QuizSubmission) => mergedMap.set(qs.id, qs));
+              prevLocal.forEach((qs: QuizSubmission) => {
+                if (!mergedMap.has(qs.id)) mergedMap.set(qs.id, qs);
+              });
+              const final = Array.from(mergedMap.values());
+              saveState('quiz_subs', final);
+              return final;
+            });
+          }
+          if (Array.isArray(db.assignmentSubmissions)) {
+            setAssignmentSubmissions((prevLocal) => {
+              const mergedMap = new Map<string, AssignmentSubmission>();
+              db.assignmentSubmissions.forEach((as: AssignmentSubmission) => mergedMap.set(as.id, as));
+              prevLocal.forEach((as: AssignmentSubmission) => {
+                if (!mergedMap.has(as.id)) mergedMap.set(as.id, as);
+              });
+              const final = Array.from(mergedMap.values());
+              saveState('asgn_subs', final);
+              return final;
+            });
+          }
           if (Array.isArray(db.gradeLogs)) setGradeLogs(db.gradeLogs);
           if (db.activeLiveStream) setActiveLiveStream(db.activeLiveStream);
         }
