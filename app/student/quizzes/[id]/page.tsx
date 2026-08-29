@@ -34,8 +34,7 @@ export default function InteractiveQuizPlayerPage() {
   const rawQuizId = (params?.id as string) || 'quiz_1';
   const cleanQuizId = rawQuizId.split('/')[0];
 
-  const visibleQuizzes = currentStudent ? quizzes.filter((q) => isContentVisibleToStudent(q, currentStudent.grade, currentStudent.id)) : quizzes;
-  const targetQuiz = visibleQuizzes.find((q) => q.id === rawQuizId || q.id === cleanQuizId) || visibleQuizzes[0];
+  const targetQuiz = quizzes.find((q) => q.id === rawQuizId || q.id === cleanQuizId) || quizzes.find((q) => currentStudent && isContentVisibleToStudent(q, currentStudent.grade, currentStudent.id)) || quizzes[0];
 
   // Check if student already submitted this quiz before
   const existingSubmission = quizSubmissions.find(
@@ -66,7 +65,43 @@ export default function InteractiveQuizPlayerPage() {
     return () => clearInterval(timer);
   }, [isSubmitted, secondsLeft]);
 
-  if (!currentStudent || !targetQuiz) return null;
+  if (!currentStudent || !targetQuiz) {
+    return (
+      <div className="max-w-xl mx-auto my-12 p-8 text-center rounded-3xl glass-panel border border-slate-800 space-y-4 text-white">
+        <HelpCircle className="w-12 h-12 text-slate-600 mx-auto" />
+        <h3 className="text-lg font-bold">الاختبار غير موجود أو جاري تحميله 🔄</h3>
+        <p className="text-xs text-slate-400">يرجى العودة لقائمة الاختبارات أو التأكد من صفك الدراسي.</p>
+        <Link href="/student/quizzes" className="px-5 py-2.5 rounded-xl bg-purple-600 text-white font-bold text-xs inline-block">
+          العودة لقائمة الاختبارات 👈
+        </Link>
+      </div>
+    );
+  }
+
+  // Fallback UI if quiz has no questions yet
+  if (!targetQuiz.questions || targetQuiz.questions.length === 0) {
+    return (
+      <BanShield student={currentStudent}>
+        <div className="max-w-xl mx-auto my-12 p-8 text-center rounded-3xl glass-panel border border-amber-500/30 space-y-5 text-white">
+          <div className="w-16 h-16 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center mx-auto text-2xl font-bold border border-amber-500/30">
+            <HelpCircle className="w-8 h-8" />
+          </div>
+          <div className="space-y-2">
+            <h3 className="text-xl font-extrabold">لا توجد أسئلة مضافة لهذا الاختبار بعد 📝</h3>
+            <p className="text-xs text-slate-300">
+              يقوم المعلم بإضافة أسئلة هذا الاختبار حالياً. يرجى المتابعة والعودة لاحقاً.
+            </p>
+          </div>
+          <Link
+            href="/student/quizzes"
+            className="px-6 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs inline-flex items-center gap-2 transition"
+          >
+            <span>العودة لقائمة الاختبارات 👈</span>
+          </Link>
+        </div>
+      </BanShield>
+    );
+  }
 
   // Block exam entry if quiz is closed by admin and student hasn't submitted previously
   if (!targetQuiz.isOpen && !isSubmitted) {
@@ -146,14 +181,15 @@ export default function InteractiveQuizPlayerPage() {
   const seconds = secondsLeft % 60;
 
   // Instant per-question evaluation helper
-  const hasAnsweredCurrent = selectedAnswers[currentQuestion.id] !== undefined;
-  const userChoiceCurrent = selectedAnswers[currentQuestion.id];
-  const isCurrentCorrect = userChoiceCurrent === currentQuestion.correctAnswer;
+  const currentQId = currentQuestion?.id || '';
+  const hasAnsweredCurrent = currentQId ? selectedAnswers[currentQId] !== undefined : false;
+  const userChoiceCurrent = currentQId ? selectedAnswers[currentQId] : null;
+  const isCurrentCorrect = currentQuestion ? userChoiceCurrent === currentQuestion.correctAnswer : false;
 
   let currentCorrectText = '';
-  if (currentQuestion.type === 'mcq' && currentQuestion.options) {
+  if (currentQuestion && currentQuestion.type === 'mcq' && currentQuestion.options) {
     currentCorrectText = currentQuestion.options[Number(currentQuestion.correctAnswer)] || '';
-  } else if (currentQuestion.type === 'true_false') {
+  } else if (currentQuestion && currentQuestion.type === 'true_false') {
     currentCorrectText = currentQuestion.correctAnswer ? 'صح (True)' : 'خطأ (False)';
   }
 
