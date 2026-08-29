@@ -18,13 +18,14 @@ import {
   Eye,
   Award,
   AlertTriangle,
+  Unlock,
   X,
   Sparkles,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function QuizzesAdminPage() {
-  const { dict, quizzes, createQuiz, updateQuiz, toggleQuizStatus, deleteQuiz, quizSubmissions, students } = useEduPulse();
+  const { dict, quizzes, createQuiz, updateQuiz, toggleQuizStatus, deleteQuiz, quizSubmissions, students, resetQuizSubmission } = useEduPulse();
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingQuiz, setEditingQuiz] = useState<Quiz | null>(null);
@@ -695,9 +696,21 @@ export default function QuizzesAdminPage() {
                             </div>
                           </div>
 
-                          <div className="text-right font-mono">
-                            <span className="block text-sm font-black text-amber-400">{sub.totalScore} / {sub.maxScore}</span>
-                            <span className="text-[10px] text-emerald-400 font-bold">{sub.percentage}%</span>
+                          <div className="flex items-center gap-3">
+                            <div className="text-right font-mono">
+                              <span className="block text-sm font-black text-amber-400">{sub.totalScore} / {sub.maxScore}</span>
+                              <span className="text-[10px] text-emerald-400 font-bold">{sub.percentage}%</span>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => resetQuizSubmission(analyticsQuiz.id, sub.studentId)}
+                              className="px-3 py-1.5 rounded-xl bg-purple-950/80 hover:bg-purple-900 border border-purple-500/40 text-purple-200 text-xs font-bold transition flex items-center gap-1 shrink-0"
+                              title="إلغاء المحاولة المكتملة وإعادة فتح الاختبار للطالب مجدداً"
+                            >
+                              <Unlock className="w-3.5 h-3.5 text-purple-400" />
+                              <span>إعادة فتح المحاولة 🔓</span>
+                            </button>
                           </div>
                         </div>
                       );

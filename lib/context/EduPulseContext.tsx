@@ -91,6 +91,7 @@ interface EduPulseContextType {
   toggleQuizStatus: (quizId: string) => void;
   deleteQuiz: (quizId: string) => void;
   submitQuiz: (submission: Omit<QuizSubmission, 'id' | 'submittedAt'>) => void;
+  resetQuizSubmission: (quizId: string, studentId: string) => void;
   createAssignment: (assignment: Omit<Assignment, 'id' | 'createdAt'>) => void;
   updateAssignment: (assignment: Assignment) => void;
   deleteAssignment: (assignmentId: string) => void;
@@ -766,6 +767,31 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     );
   };
 
+  const resetQuizSubmission = (quizId: string, studentId: string) => {
+    const updated = quizSubmissions.filter(
+      (s) => !(s.quizId === quizId && s.studentId === studentId)
+    );
+    setQuizSubmissions(updated);
+    saveState('quiz_subs', updated);
+
+    // Sync reset with server DB
+    fetch('/api/db', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'resetQuizSubmission',
+        quizId,
+        studentId,
+      }),
+    }).catch((e) => console.warn('Reset quiz submission sync warning:', e));
+
+    showToast(
+      language === 'ar'
+        ? 'تم فتح إعادة المحاولة للطالب بنجاح 🔓'
+        : 'Quiz attempt unlocked for student successfully'
+    );
+  };
+
   const createAssignment = (asgnData: Omit<Assignment, 'id' | 'createdAt'>) => {
     const newAsgn: Assignment = {
       ...asgnData,
@@ -1081,6 +1107,7 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         toggleQuizStatus,
         deleteQuiz,
         submitQuiz,
+        resetQuizSubmission,
         createAssignment,
         updateAssignment,
         deleteAssignment,

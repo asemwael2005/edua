@@ -72,6 +72,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: true, db });
     }
 
+    if (action === 'resetQuizSubmission' && body.quizId && body.studentId) {
+      db.quizSubmissions = db.quizSubmissions.filter(
+        (s) => !(s.quizId === body.quizId && s.studentId === body.studentId)
+      );
+      writeDatabase(db);
+      return NextResponse.json({ success: true, db });
+    }
+
     return NextResponse.json({ error: 'Invalid database action' }, { status: 400 });
   } catch (error) {
     return NextResponse.json({ error: 'Failed to mutate database' }, { status: 500 });

@@ -403,7 +403,12 @@ export default function InteractiveQuizPlayerPage() {
               <div className="inline-flex items-center gap-4 px-5 py-2 rounded-2xl bg-slate-950 border border-slate-800 text-xs font-mono font-bold text-slate-300">
                 <span>الدرجة: {submissionResult?.totalScore || 0} / {submissionResult?.maxScore || 0}</span>
                 <span>•</span>
-                <span>الأسئلة الصحيحة: {submissionResult?.answers.filter((a: any) => a.isCorrect).length} من {targetQuiz.questions.length}</span>
+                <span>الأسئلة الصحيحة: {submissionResult?.answers?.filter((a: any) => a.isCorrect)?.length || 0} من {targetQuiz.questions.length}</span>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-amber-950/40 border border-amber-500/30 text-amber-300 text-xs font-bold flex items-center justify-center gap-2">
+                <Lock className="w-4 h-4 text-amber-400" />
+                <span>تم استهلاك المحاولة المتاحة لهذا الاختبار (1 من 1 محاولة) 🔒. لإعادة الاختبار، يرجى التواصل مع الإدارة لفتح محاولة جديدة.</span>
               </div>
             </div>
 
