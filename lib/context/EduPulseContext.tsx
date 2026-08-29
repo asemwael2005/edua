@@ -84,6 +84,7 @@ interface EduPulseContextType {
   markAttendance: (sessionId: string, studentId: string, status: AttendanceStatus) => void;
   updateSlideProgress: (sessionId: string, studentId: string, slideNumber: number) => void;
   createSession: (sessionData: Omit<Session, 'id' | 'attendance' | 'studentProgress'>) => void;
+  updateSession: (session: Session) => void;
   deleteSession: (sessionId: string) => void;
   createQuiz: (quiz: Omit<Quiz, 'id'>) => void;
   updateQuiz: (quiz: Quiz) => void;
@@ -91,6 +92,7 @@ interface EduPulseContextType {
   deleteQuiz: (quizId: string) => void;
   submitQuiz: (submission: Omit<QuizSubmission, 'id' | 'submittedAt'>) => void;
   createAssignment: (assignment: Omit<Assignment, 'id' | 'createdAt'>) => void;
+  updateAssignment: (assignment: Assignment) => void;
   deleteAssignment: (assignmentId: string) => void;
   submitAssignment: (assignmentId: string, studentId: string, content: string) => void;
   gradeSubmission: (submissionId: string, score: number, feedback: string) => void;
@@ -100,6 +102,7 @@ interface EduPulseContextType {
   addSessionFeedback: (feedback: Omit<SessionFeedback, 'id' | 'submittedAt'>) => void;
   deleteSessionFeedback: (feedbackId: string) => void;
   addVideo: (videoData: Omit<RecordedVideo, 'id' | 'createdAt' | 'viewsCount'>) => void;
+  updateVideo: (video: RecordedVideo) => void;
   deleteVideo: (videoId: string) => void;
   updateLiveStream: (sessionId: string, isLive: boolean, meetingUrl: string, grade?: string, title?: string) => void;
   resetToDefaultData: () => void;
@@ -645,6 +648,14 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     showToast(language === 'ar' ? 'تمت إضافة المحاضرة/الجلسة التعليمية بنجاح' : 'Session created successfully');
   };
 
+  const updateSession = (updatedSess: Session) => {
+    const updated = sessions.map((s) => (s.id === updatedSess.id ? updatedSess : s));
+    setSessions(updated);
+    saveState('sessions', updated);
+    syncDB('update', 'sessions', updatedSess);
+    showToast(language === 'ar' ? 'تم تحديث المحاضرة وصلاحيات الوصول ✏️' : 'Session updated successfully');
+  };
+
   const deleteSession = (sessionId: string) => {
     const updated = sessions.filter((s) => s.id !== sessionId);
     setSessions(updated);
@@ -736,6 +747,14 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     saveState('assignments', updated);
     syncDB('create', 'assignments', newAsgn);
     showToast(language === 'ar' ? 'تم إسناد الواجب بنجاح' : 'Assignment created');
+  };
+
+  const updateAssignment = (updatedAsgn: Assignment) => {
+    const updated = assignments.map((a) => (a.id === updatedAsgn.id ? updatedAsgn : a));
+    setAssignments(updated);
+    saveState('assignments', updated);
+    syncDB('update', 'assignments', updatedAsgn);
+    showToast(language === 'ar' ? 'تم تحديث الواجب وصلاحيات الوصول ✏️' : 'Assignment updated successfully');
   };
 
   const deleteAssignment = (assignmentId: string) => {
@@ -843,6 +862,14 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     saveState('videos', updated);
     syncDB('create', 'videos', newVideo);
     showToast(language === 'ar' ? 'تم رفع ونشر تسجيل المحاضرة بنجاح' : 'Lecture recording added');
+  };
+
+  const updateVideo = (updatedVideo: RecordedVideo) => {
+    const updated = videos.map((v) => (v.id === updatedVideo.id ? updatedVideo : v));
+    setVideos(updated);
+    saveState('videos', updated);
+    syncDB('update', 'videos', updatedVideo);
+    showToast(language === 'ar' ? 'تم تحديث الفيديو وصلاحيات الوصول ✏️' : 'Video updated successfully');
   };
 
   const deleteVideo = (videoId: string) => {
@@ -1013,6 +1040,7 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         markAttendance,
         updateSlideProgress,
         createSession,
+        updateSession,
         deleteSession,
         createQuiz,
         updateQuiz,
@@ -1020,6 +1048,7 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         deleteQuiz,
         submitQuiz,
         createAssignment,
+        updateAssignment,
         deleteAssignment,
         submitAssignment,
         gradeSubmission,
@@ -1029,6 +1058,7 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         addSessionFeedback,
         deleteSessionFeedback,
         addVideo,
+        updateVideo,
         deleteVideo,
         updateLiveStream,
         resetToDefaultData,

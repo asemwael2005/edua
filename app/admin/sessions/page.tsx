@@ -30,11 +30,12 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function SessionsAdminPage() {
-  const { dict, sessions, students, markAttendance, updateSlideProgress, createSession, deleteSession } = useEduPulse();
+  const { dict, sessions, students, markAttendance, updateSlideProgress, createSession, updateSession, deleteSession } = useEduPulse();
 
   const [selectedSessionId, setSelectedSessionId] = useState<string>(sessions[0]?.id || '');
   const [activeTab, setActiveTab] = useState<'attendance' | 'slides'>('attendance');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [editingSession, setEditingSession] = useState<Session | null>(null);
   const [deleteConfirmSession, setDeleteConfirmSession] = useState<Session | null>(null);
 
   // Presentation viewer state
@@ -48,6 +49,9 @@ export default function SessionsAdminPage() {
   const [time, setTime] = useState('17:00 - 19:30');
   const [room, setRoom] = useState('القاعة الرئيسية A1');
   const [description, setDescription] = useState('');
+  const [isPublished, setIsPublished] = useState(true);
+  const [accessScope, setAccessScope] = useState<'all' | 'specific'>('all');
+  const [allowedStudentIds, setAllowedStudentIds] = useState<string[]>([]);
 
   // Slides State for new session
   const [slidesList, setSlidesList] = useState<Slide[]>([
@@ -65,6 +69,27 @@ export default function SessionsAdminPage() {
   const [slideBullet, setSlideBullet] = useState('');
 
   const selectedSession = sessions.find((s) => s.id === selectedSessionId) || sessions[0];
+
+  const handleOpenEditSession = (sess: Session) => {
+    setEditingSession(sess);
+    setTitle(sess.title);
+    setSubject(sess.subject);
+    setGrade(sess.grade);
+    setDate(sess.date);
+    setTime(sess.time);
+    setRoom(sess.room);
+    setDescription(sess.description);
+    setSlidesList(sess.slides || []);
+    setIsPublished(sess.isPublished !== false);
+    if (sess.allowedStudentIds && sess.allowedStudentIds.length > 0) {
+      setAccessScope('specific');
+      setAllowedStudentIds(sess.allowedStudentIds);
+    } else {
+      setAccessScope('all');
+      setAllowedStudentIds([]);
+    }
+    setIsCreateModalOpen(true);
+  };
 
   const handleMark = (studentId: string, status: AttendanceStatus) => {
     if (!selectedSession) return;
@@ -92,7 +117,7 @@ export default function SessionsAdminPage() {
     e.preventDefault();
     if (!title || slidesList.length === 0) return;
 
-    createSession({
+    const payload = {
       title,
       subject,
       grade,
@@ -101,11 +126,25 @@ export default function SessionsAdminPage() {
       room,
       description,
       slides: slidesList,
-    });
+      isPublished,
+      allowedStudentIds: accessScope === 'specific' ? allowedStudentIds : [],
+    };
+
+    if (editingSession) {
+      updateSession({
+        ...editingSession,
+        ...payload,
+      });
+    } else {
+      createSession(payload);
+    }
 
     setIsCreateModalOpen(false);
+    setEditingSession(null);
     setTitle('');
     setDescription('');
+    setAllowedStudentIds([]);
+    setAccessScope('all');
   };
 
   const handleConfirmDelete = () => {
@@ -154,19 +193,37 @@ export default function SessionsAdminPage() {
           )}
 
           {selectedSession && (
-            <button
-              type="button"
-              onClick={() => setDeleteConfirmSession(selectedSession)}
-              className="px-3.5 py-2.5 rounded-xl bg-rose-950/70 hover:bg-rose-900/90 text-rose-300 border border-rose-500/40 font-bold text-xs flex items-center gap-1.5 transition shadow"
-              title="مسح هذه المحاضرة"
-            >
-              <Trash2 className="w-4 h-4 text-rose-400" />
-              <span>مسح المحاضرة 🗑️</span>
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={() => handleOpenEditSession(selectedSession)}
+                className="px-3.5 py-2.5 rounded-xl bg-purple-600/20 hover:bg-purple-600/40 text-purple-300 border border-purple-500/40 font-bold text-xs flex items-center gap-1.5 transition shadow"
+                title="تعديل المحاضرة وتخصيص صلاحيات الطلاب"
+              >
+                <span>تحديد من يراه 🎯</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setDeleteConfirmSession(selectedSession)}
+                className="px-3.5 py-2.5 rounded-xl bg-rose-950/70 hover:bg-rose-900/90 text-rose-300 border border-rose-500/40 font-bold text-xs flex items-center gap-1.5 transition shadow"
+                title="مسح هذه المحاضرة"
+              >
+                <Trash2 className="w-4 h-4 text-rose-400" />
+                <span>مسح المحاضرة 🗑️</span>
+              </button>
+            </>
           )}
 
           <button
-            onClick={() => setIsCreateModalOpen(true)}
+            onClick={() => {
+              setEditingSession(null);
+              setTitle('');
+              setDescription('');
+              setAllowedStudentIds([]);
+              setAccessScope('all');
+              setIsCreateModalOpen(true);
+            }}
             className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs shadow-lg shadow-emerald-500/20 flex items-center gap-2 shrink-0 transition"
           >
             <Plus className="w-4 h-4" />
@@ -179,10 +236,10 @@ export default function SessionsAdminPage() {
       <div className="flex border-b border-slate-800 gap-4 text-sm font-extrabold">
         <button
           onClick={() => setActiveTab('attendance')}
-          className={`pb-3 px-4 border-b-2 flex items-center gap-2 transition ${
+          className={`pb-3 flex items-center gap-2 transition border-b-2 ${
             activeTab === 'attendance'
               ? 'border-emerald-500 text-emerald-400'
-              : 'border-transparent text-slate-400 hover:text-slate-200'
+              : 'border-transparent text-slate-400 hover:text-white'
           }`}
         >
           <Users className="w-4 h-4" />
@@ -191,192 +248,98 @@ export default function SessionsAdminPage() {
 
         <button
           onClick={() => setActiveTab('slides')}
-          className={`pb-3 px-4 border-b-2 flex items-center gap-2 transition ${
+          className={`pb-3 flex items-center gap-2 transition border-b-2 ${
             activeTab === 'slides'
               ? 'border-emerald-500 text-emerald-400'
-              : 'border-transparent text-slate-400 hover:text-slate-200'
+              : 'border-transparent text-slate-400 hover:text-white'
           }`}
         >
           <Tv className="w-4 h-4" />
-          <span>{dict.sessions.slideViewer}</span>
+          <span>{dict.sessions.slideViewer} ({slides.length})</span>
         </button>
       </div>
 
-      {/* TAB 1: QUICK-MARK ATTENDANCE SHEET */}
+      {/* TAB 1: ATTENDANCE TRACKER */}
       {activeTab === 'attendance' && (
-        selectedSession ? (
-          <div className="space-y-4">
-            
-            {/* Session Summary Bar */}
-            <div className="p-5 rounded-3xl glass-panel border flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-              <div>
-                <h3 className="text-base font-bold text-white">{selectedSession.title}</h3>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  المادة: <span className="text-emerald-400 font-semibold">{selectedSession.subject}</span> | الموعد: {selectedSession.date} ({selectedSession.time}) | القاعة: {selectedSession.room}
-                </p>
-              </div>
+        <div className="space-y-4">
+          <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 flex flex-wrap items-center justify-between gap-4 text-xs font-semibold text-slate-300">
+            <div className="flex items-center gap-4">
+              <span>المكان: <strong className="text-white">{selectedSession?.room}</strong></span>
+              <span>الموعد: <strong className="text-white">{selectedSession?.time}</strong></span>
+              <span>المرحلة: <strong className="text-emerald-400">{selectedSession?.grade}</strong></span>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="flex items-center gap-1 text-emerald-400 font-bold">
+                <CheckCircle2 className="w-4 h-4" /> حافز بونص التزام
+              </span>
+            </div>
+          </div>
 
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2 text-xs font-bold font-mono">
-                  <div className="px-3 py-1.5 rounded-xl bg-emerald-950/60 border border-emerald-500/30 text-emerald-300">
-                    حاضر: {Object.values(selectedSession.attendance).filter((s) => s === 'present').length}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {students.map((student) => {
+              const status = selectedSession?.attendance[student.id] || 'none';
+
+              return (
+                <div
+                  key={student.id}
+                  className="p-4 rounded-3xl glass-panel border space-y-3 flex flex-col justify-between hover:border-emerald-500/30 transition"
+                >
+                  <div className="flex items-center gap-3">
+                    <img src={student.avatar} alt={student.name} className="w-10 h-10 rounded-2xl object-cover" />
+                    <div>
+                      <h4 className="text-sm font-extrabold text-white">{student.name}</h4>
+                      <span className="text-[10px] text-slate-400 font-mono">نسبة الحضور: {student.attendanceRate}%</span>
+                    </div>
                   </div>
-                  <div className="px-3 py-1.5 rounded-xl bg-rose-950/60 border border-rose-500/30 text-rose-300">
-                    غائب: {Object.values(selectedSession.attendance).filter((s) => s === 'absent').length}
-                  </div>
-                  <div className="px-3 py-1.5 rounded-xl bg-amber-950/60 border border-amber-500/30 text-amber-300">
-                    متأخر: {Object.values(selectedSession.attendance).filter((s) => s === 'late').length}
+
+                  {/* Attendance Controls */}
+                  <div className="grid grid-cols-3 gap-1.5 pt-2 border-t border-slate-800/80">
+                    <button
+                      onClick={() => handleMark(student.id, 'present')}
+                      className={`p-2 rounded-xl text-[11px] font-extrabold flex items-center justify-center gap-1 transition ${
+                        status === 'present'
+                          ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/20'
+                          : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
+                      }`}
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      <span>حاضر 🟢</span>
+                    </button>
+
+                    <button
+                      onClick={() => handleMark(student.id, 'late')}
+                      className={`p-2 rounded-xl text-[11px] font-extrabold flex items-center justify-center gap-1 transition ${
+                        status === 'late'
+                          ? 'bg-amber-600 text-white shadow-lg shadow-amber-500/20'
+                          : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
+                      }`}
+                    >
+                      <Clock className="w-3.5 h-3.5" />
+                      <span>متأخر 🟡</span>
+                    </button>
+
+                    <button
+                      onClick={() => handleMark(student.id, 'absent')}
+                      className={`p-2 rounded-xl text-[11px] font-extrabold flex items-center justify-center gap-1 transition ${
+                        status === 'absent'
+                          ? 'bg-rose-600 text-white shadow-lg shadow-rose-500/20'
+                          : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
+                      }`}
+                    >
+                      <XCircle className="w-3.5 h-3.5" />
+                      <span>غائب 🔴</span>
+                    </button>
                   </div>
                 </div>
-
-                <button
-                  type="button"
-                  onClick={() => setDeleteConfirmSession(selectedSession)}
-                  className="px-3 py-1.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/40 border border-rose-500/30 text-rose-300 text-xs font-bold transition flex items-center gap-1"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  <span>مسح 🗑️</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Quick Mark Attendance Table */}
-            <div className="rounded-3xl glass-panel border overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-right rtl:text-right ltr:text-left border-collapse">
-                  <thead>
-                    <tr className="bg-slate-900/80 border-b border-slate-800 text-[11px] font-bold text-slate-400 uppercase">
-                      <th className="py-3.5 px-4">الطالب</th>
-                      <th className="py-3.5 px-4">الصف الدراسي</th>
-                      <th className="py-3.5 px-4">تقدم السلايدات الحية</th>
-                      <th className="py-3.5 px-4 text-center">كشف تسجيل الحضور الفوري</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-800/60 text-xs font-semibold">
-                    {students.length === 0 ? (
-                      <tr>
-                        <td colSpan={4} className="py-12 text-center text-slate-400">
-                          لا يوجد طلاب مسجلين بالمنصة حالياً. قم بإضافة طلاب من قسم "إدارة الطلاب".
-                        </td>
-                      </tr>
-                    ) : (
-                      students.map((st) => {
-                        const status = selectedSession.attendance[st.id] || 'absent';
-                        const currentSlidePos = selectedSession.studentProgress[st.id] || 0;
-
-                        return (
-                          <tr key={st.id} className="hover:bg-slate-800/30 transition">
-                            {/* Student */}
-                            <td className="py-3.5 px-4">
-                              <div className="flex items-center gap-3">
-                                <img src={st.avatar} alt={st.name} className="w-9 h-9 rounded-xl object-cover" />
-                                <div>
-                                  <span className="block font-bold text-white">{st.name}</span>
-                                  <span className="text-[11px] text-slate-400">{st.email}</span>
-                                </div>
-                              </div>
-                            </td>
-
-                            {/* Grade */}
-                            <td className="py-3.5 px-4 text-slate-300">{st.grade}</td>
-
-                            {/* Live Slide Progress */}
-                            <td className="py-3.5 px-4">
-                              <div className="flex items-center gap-2">
-                                <div className="w-20 h-2 rounded-full bg-slate-800 overflow-hidden">
-                                  <div
-                                    className="h-full bg-emerald-500 rounded-full"
-                                    style={{
-                                      width: `${(currentSlidePos / (selectedSession.slides.length || 1)) * 100}%`,
-                                    }}
-                                  />
-                                </div>
-                                <span className="text-[11px] font-mono text-emerald-300 font-bold">
-                                  شريحة {currentSlidePos} / {selectedSession.slides.length}
-                                </span>
-                              </div>
-                            </td>
-
-                            {/* Attendance Toggle Buttons */}
-                            <td className="py-3.5 px-4">
-                              <div className="flex items-center justify-center gap-2">
-                                {/* Present */}
-                                <button
-                                  onClick={() => handleMark(st.id, 'present')}
-                                  className={`px-3 py-1.5 rounded-xl font-bold transition flex items-center gap-1.5 ${
-                                    status === 'present'
-                                      ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/20'
-                                      : 'bg-slate-900 text-slate-400 hover:text-emerald-400 border border-slate-800'
-                                  }`}
-                                >
-                                  <CheckCircle2 className="w-3.5 h-3.5" />
-                                  <span>حاضر</span>
-                                </button>
-
-                                {/* Late */}
-                                <button
-                                  onClick={() => handleMark(st.id, 'late')}
-                                  className={`px-3 py-1.5 rounded-xl font-bold transition flex items-center gap-1.5 ${
-                                    status === 'late'
-                                      ? 'bg-amber-600 text-white shadow-lg shadow-amber-500/20'
-                                      : 'bg-slate-900 text-slate-400 hover:text-amber-400 border border-slate-800'
-                                  }`}
-                                >
-                                  <Clock className="w-3.5 h-3.5" />
-                                  <span>متأخر</span>
-                                </button>
-
-                                {/* Excused */}
-                                <button
-                                  onClick={() => handleMark(st.id, 'excused')}
-                                  className={`px-3 py-1.5 rounded-xl font-bold transition flex items-center gap-1.5 ${
-                                    status === 'excused'
-                                      ? 'bg-cyan-600 text-white shadow-lg shadow-cyan-500/20'
-                                      : 'bg-slate-900 text-slate-400 hover:text-cyan-400 border border-slate-800'
-                                  }`}
-                                >
-                                  <HelpCircle className="w-3.5 h-3.5" />
-                                  <span>معذور</span>
-                                </button>
-
-                                {/* Absent */}
-                                <button
-                                  onClick={() => handleMark(st.id, 'absent')}
-                                  className={`px-3 py-1.5 rounded-xl font-bold transition flex items-center gap-1.5 ${
-                                    status === 'absent'
-                                      ? 'bg-rose-600 text-white shadow-lg shadow-rose-500/20'
-                                      : 'bg-slate-900 text-slate-400 hover:text-rose-400 border border-slate-800'
-                                  }`}
-                                >
-                                  <XCircle className="w-3.5 h-3.5" />
-                                  <span>غائب</span>
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
+              );
+            })}
           </div>
-        ) : (
-          <div className="p-12 text-center rounded-3xl glass-panel border space-y-3">
-            <CalendarCheck className="w-12 h-12 text-slate-500 mx-auto" />
-            <h3 className="text-base font-bold text-white">لا توجد جلسات مضافة حالياً</h3>
-            <p className="text-xs text-slate-400">اضغط على زر "إنشاء جلسة جديدة" بالأعلى لإضافة المحاضرة الأولى.</p>
-          </div>
-        )
+        </div>
       )}
 
-      {/* TAB 2: SLIDE DECK & LIVE STUDENT PROGRESS TRACKER */}
-      {activeTab === 'slides' && selectedSession && (
+      {/* TAB 2: INTERACTIVE PRESENTATION VIEWER */}
+      {activeTab === 'slides' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          
-          {/* Main Slide Presentation Viewer */}
           <div className="lg:col-span-2 space-y-4">
             <div className="p-6 rounded-3xl bg-slate-900 border border-emerald-500/30 shadow-2xl space-y-6 min-h-[420px] flex flex-col justify-between relative overflow-hidden text-white">
               <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
@@ -448,68 +411,6 @@ export default function SessionsAdminPage() {
               </div>
             </div>
           </div>
-
-          {/* Live Student Slide Tracker Drawer & Real File Upload */}
-          <div className="space-y-6">
-            
-            {/* Real File Upload Section */}
-            <div className="p-6 rounded-3xl glass-panel border space-y-3">
-              <h3 className="text-sm font-extrabold text-white flex items-center gap-2">
-                <FileText className="w-4 h-4 text-emerald-400" />
-                <span>رفع ملزمة المحاضرة الحقيقية (PDF/Slides)</span>
-              </h3>
-              <FileUpload
-                onUploadSuccess={(fileData) => {
-                  alert(`تم رفع الملف بنجاح: ${fileData.name}\nالرابط: ${fileData.url}`);
-                }}
-                label="اختر ملزمة PDF أو العرض التقديمي لرفعه للمركز"
-              />
-            </div>
-
-            <div className="p-6 rounded-3xl glass-panel border space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-base font-bold text-white flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-amber-400" />
-                  <span>{dict.sessions.liveStudentTracker}</span>
-                </h3>
-                <span className="text-[10px] bg-emerald-950 text-emerald-400 px-2 py-0.5 rounded-md font-mono animate-pulse">
-                  مباشر LIVE
-                </span>
-              </div>
-
-              <div className="space-y-3">
-                {students.map((st) => {
-                  const pos = selectedSession.studentProgress[st.id] || 0;
-                  const isFinished = pos === slides.length;
-
-                  return (
-                    <div key={st.id} className="p-3 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-1.5">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2.5">
-                          <img src={st.avatar} alt={st.name} className="w-7 h-7 rounded-lg object-cover" />
-                          <span className="text-xs font-bold text-slate-200 truncate max-w-[120px]">{st.name}</span>
-                        </div>
-                        <span className={`text-[11px] font-mono font-bold ${isFinished ? 'text-emerald-400' : 'text-emerald-400'}`}>
-                          شريحة {pos} / {slides.length}
-                        </span>
-                      </div>
-
-                      <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full transition-all duration-500 rounded-full ${
-                            isFinished ? 'bg-emerald-500' : 'bg-emerald-500'
-                          }`}
-                          style={{ width: `${(pos / (slides.length || 1)) * 100}%` }}
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-          </div>
-
         </div>
       )}
 
@@ -559,7 +460,7 @@ export default function SessionsAdminPage() {
         )}
       </AnimatePresence>
 
-      {/* --- CREATE NEW SESSION MODAL --- */}
+      {/* --- CREATE / EDIT SESSION MODAL --- */}
       <AnimatePresence>
         {isCreateModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md overflow-y-auto text-white">
@@ -570,7 +471,9 @@ export default function SessionsAdminPage() {
               className="max-w-2xl w-full p-6 rounded-3xl bg-slate-900 border border-emerald-500/30 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto"
             >
               <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                <h3 className="text-base font-extrabold">إنشاء جلسة/محاضرة تعليمية جديدة</h3>
+                <h3 className="text-base font-extrabold">
+                  {editingSession ? 'تعديل المحاضرة والتحكم في صلاحيات الوصول 🎯' : 'إنشاء جلسة/محاضرة تعليمية جديدة'}
+                </h3>
                 <button onClick={() => setIsCreateModalOpen(false)} className="p-1.5 text-slate-400 hover:text-white">
                   <X className="w-5 h-5" />
                 </button>
@@ -601,7 +504,7 @@ export default function SessionsAdminPage() {
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-slate-300">الصف الدراسي المستهدف</label>
+                    <label className="text-slate-300">الصف الدراسي المستهدف (صلاحية الوصول)</label>
                     <select
                       value={grade}
                       onChange={(e) => setGrade(e.target.value)}
@@ -610,6 +513,7 @@ export default function SessionsAdminPage() {
                       <option value="الصف الأول الثانوي (Grade 10)">الصف الأول الثانوي (Grade 10)</option>
                       <option value="الصف الثاني الثانوي (Grade 11)">الصف الثاني الثانوي (Grade 11)</option>
                       <option value="الصف الثالث الثانوي (Grade 12)">الصف الثالث الثانوي (Grade 12)</option>
+                      <option value="all">جميع المراحل الدراسية 🌐 (متاح للجميع)</option>
                     </select>
                   </div>
                 </div>
@@ -624,17 +528,20 @@ export default function SessionsAdminPage() {
                       className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white font-mono"
                     />
                   </div>
+
                   <div className="space-y-1">
-                    <label className="text-slate-300">الوقت</label>
+                    <label className="text-slate-300">توقيت المحاضرة</label>
                     <input
                       type="text"
                       value={time}
                       onChange={(e) => setTime(e.target.value)}
+                      placeholder="17:00 - 19:30"
                       className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white font-mono"
                     />
                   </div>
+
                   <div className="space-y-1">
-                    <label className="text-slate-300">القاعة / المكان</label>
+                    <label className="text-slate-300">القاعة / الغرفة</label>
                     <input
                       type="text"
                       value={room}
@@ -644,52 +551,144 @@ export default function SessionsAdminPage() {
                   </div>
                 </div>
 
+                <div className="space-y-1 p-3 rounded-2xl bg-slate-950 border border-slate-800">
+                  <label className="text-slate-300 font-bold block">حالة النشر والظهور للطلاب 👁️</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsPublished(true)}
+                      className={`p-2.5 rounded-xl border text-xs font-extrabold flex items-center justify-center gap-2 transition ${
+                        isPublished
+                          ? 'bg-emerald-600 text-white border-emerald-500 shadow-md shadow-emerald-500/20'
+                          : 'bg-slate-900 text-slate-400 border-slate-800'
+                      }`}
+                    >
+                      <span>متاح ومؤكد للطلاب 🟢</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsPublished(false)}
+                      className={`p-2.5 rounded-xl border text-xs font-extrabold flex items-center justify-center gap-2 transition ${
+                        !isPublished
+                          ? 'bg-rose-600 text-white border-rose-500 shadow-md shadow-rose-500/20'
+                          : 'bg-slate-900 text-slate-400 border-slate-800'
+                      }`}
+                    >
+                      <span>مخفي (مسودة للإدارة فقط) 🔒</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Per-Student Access Control (تحديد الطلاب المسموح لهم) */}
+                <div className="space-y-2 p-3.5 rounded-2xl bg-slate-950 border border-slate-800">
+                  <label className="text-slate-300 font-bold block">تحديد إمكانية المشاهدة والوصول 👤 (تخصيص طلاب محددين)</label>
+                  <div className="grid grid-cols-2 gap-2 text-xs font-bold">
+                    <button
+                      type="button"
+                      onClick={() => setAccessScope('all')}
+                      className={`p-2.5 rounded-xl border flex items-center justify-center gap-1.5 transition ${
+                        accessScope === 'all'
+                          ? 'bg-emerald-600 text-white border-emerald-500 shadow-md'
+                          : 'bg-slate-900 text-slate-400 border-slate-800'
+                      }`}
+                    >
+                      <span>جميع طلاب الصف 🌐</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setAccessScope('specific')}
+                      className={`p-2.5 rounded-xl border flex items-center justify-center gap-1.5 transition ${
+                        accessScope === 'specific'
+                          ? 'bg-emerald-600 text-white border-emerald-500 shadow-md'
+                          : 'bg-slate-900 text-slate-400 border-slate-800'
+                      }`}
+                    >
+                      <span>طلاب محددون فقط 🎯 ({allowedStudentIds.length} طالب)</span>
+                    </button>
+                  </div>
+
+                  {accessScope === 'specific' && (
+                    <div className="mt-3 space-y-2 pt-2 border-t border-slate-800">
+                      <p className="text-[11px] text-emerald-300 font-semibold">حدد الطلاب المسموح لهم برؤية وحضور هذه المحاضرة:</p>
+                      <div className="max-h-40 overflow-y-auto space-y-1.5 pr-1">
+                        {students.map((st) => {
+                          const isChecked = allowedStudentIds.includes(st.id);
+                          return (
+                            <label
+                              key={st.id}
+                              className={`flex items-center justify-between p-2 rounded-xl border cursor-pointer text-xs transition ${
+                                isChecked ? 'bg-emerald-950/60 border-emerald-500/50 text-white' : 'bg-slate-900/60 border-slate-800 text-slate-400'
+                              }`}
+                            >
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="checkbox"
+                                  checked={isChecked}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      setAllowedStudentIds([...allowedStudentIds, st.id]);
+                                    } else {
+                                      setAllowedStudentIds(allowedStudentIds.filter((id) => id !== st.id));
+                                    }
+                                  }}
+                                  className="w-4 h-4 accent-emerald-500 rounded cursor-pointer"
+                                />
+                                <span className="font-bold">{st.name}</span>
+                              </div>
+                              <span className="text-[10px] font-mono text-slate-500">{st.grade}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 <div className="space-y-1">
-                  <label className="text-slate-300">وصف وملاحظات المحاضرة</label>
+                  <label className="text-slate-300">وصف وفكرة الجلسة</label>
                   <textarea
                     rows={2}
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    placeholder="اكتب الأهداف والمسائل التي سيتم حلها..."
-                    className="w-full p-3 rounded-xl bg-slate-950 border border-slate-800 text-white"
+                    placeholder="وصف مختصر لموضوع الجلسة..."
+                    className="w-full p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white"
                   />
                 </div>
 
-                {/* Dynamic Slide Builder */}
-                <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-3">
-                  <h4 className="font-extrabold text-emerald-400">إضافة سلايد/شريحة تفاعلية للعرض</h4>
-                  
-                  <input
-                    type="text"
-                    value={slideTitle}
-                    onChange={(e) => setSlideTitle(e.target.value)}
-                    placeholder="عنوان الشريحة (مثال: قانون الاشتقاق الضمني)..."
-                    className="w-full p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white"
-                  />
+                {/* Slides Builder Section */}
+                <div className="space-y-3 pt-2 border-t border-slate-800">
+                  <h4 className="font-extrabold text-emerald-400">إعداد شرائح العرض السريعة (Slides):</h4>
 
-                  <textarea
-                    rows={2}
-                    value={slideContent}
-                    onChange={(e) => setSlideContent(e.target.value)}
-                    placeholder="محتوى الشريحة والشرح التفصيلي..."
-                    className="w-full p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white"
-                  />
-
-                  <input
-                    type="text"
-                    value={slideBullet}
-                    onChange={(e) => setSlideBullet(e.target.value)}
-                    placeholder="نقاط الشريحة (افصل بينها بفاصلة ,)..."
-                    className="w-full p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white"
-                  />
-
-                  <button
-                    type="button"
-                    onClick={handleAddSlide}
-                    className="w-full py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold transition"
-                  >
-                    إضافة الشريحة لقائمة العرض ({slidesList.length})
-                  </button>
+                  <div className="space-y-2 bg-slate-950 p-3 rounded-2xl border border-slate-800">
+                    <input
+                      type="text"
+                      placeholder="عنوان الشريحة..."
+                      value={slideTitle}
+                      onChange={(e) => setSlideTitle(e.target.value)}
+                      className="w-full p-2 rounded-xl bg-slate-900 border border-slate-800 text-white"
+                    />
+                    <textarea
+                      rows={2}
+                      placeholder="محتوى الشريحة والشرح الرئيسية..."
+                      value={slideContent}
+                      onChange={(e) => setSlideContent(e.target.value)}
+                      className="w-full p-2 rounded-xl bg-slate-900 border border-slate-800 text-white"
+                    />
+                    <input
+                      type="text"
+                      placeholder="نقاط فرعية (افصل بينها بفصلات)..."
+                      value={slideBullet}
+                      onChange={(e) => setSlideBullet(e.target.value)}
+                      className="w-full p-2 rounded-xl bg-slate-900 border border-slate-800 text-white"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddSlide}
+                      className="w-full py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold transition shadow"
+                    >
+                      إضافة الشريحة لقائمة العرض ({slidesList.length})
+                    </button>
+                  </div>
                 </div>
 
                 <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
@@ -702,9 +701,9 @@ export default function SessionsAdminPage() {
                   </button>
                   <button
                     type="submit"
-                    className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-500/20"
+                    className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold shadow-lg shadow-emerald-500/20 transition"
                   >
-                    حفظ ونشر المحاضرة
+                    {editingSession ? 'حفظ التعديلات والصلاحيات 💾' : 'حفظ وإنشاء الجلسة 🚀'}
                   </button>
                 </div>
               </form>
@@ -712,7 +711,6 @@ export default function SessionsAdminPage() {
           </div>
         )}
       </AnimatePresence>
-
     </div>
   );
 }

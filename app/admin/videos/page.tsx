@@ -19,9 +19,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { getEmbedVideoUrl } from '@/lib/videoUtils';
 
 export default function AdminVideosPage() {
-  const { videos, addVideo, deleteVideo, showToast } = useEduPulse();
+  const { videos, addVideo, updateVideo, deleteVideo, showToast, students } = useEduPulse();
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [editingVideo, setEditingVideo] = useState<RecordedVideo | null>(null);
   const [previewVideo, setPreviewVideo] = useState<RecordedVideo | null>(null);
 
   // New Video Form State
@@ -31,6 +32,28 @@ export default function AdminVideosPage() {
   const [videoUrl, setVideoUrl] = useState('');
   const [duration, setDuration] = useState('01:30:00');
   const [description, setDescription] = useState('');
+  const [isPublished, setIsPublished] = useState(true);
+  const [accessScope, setAccessScope] = useState<'all' | 'specific'>('all');
+  const [allowedStudentIds, setAllowedStudentIds] = useState<string[]>([]);
+
+  const handleOpenEditVideo = (vid: RecordedVideo) => {
+    setEditingVideo(vid);
+    setTitle(vid.title);
+    setSubject(vid.subject);
+    setGrade(vid.grade);
+    setVideoUrl(vid.videoUrl);
+    setDuration(vid.duration || '01:00:00');
+    setDescription(vid.description || '');
+    setIsPublished(vid.isPublished !== false);
+    if (vid.allowedStudentIds && vid.allowedStudentIds.length > 0) {
+      setAccessScope('specific');
+      setAllowedStudentIds(vid.allowedStudentIds);
+    } else {
+      setAccessScope('all');
+      setAllowedStudentIds([]);
+    }
+    setIsAddModalOpen(true);
+  };
 
   const handleSaveVideo = (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,7 +62,7 @@ export default function AdminVideosPage() {
       return;
     }
 
-    addVideo({
+    const payload = {
       title: title.trim(),
       subject: subject.trim(),
       grade,
@@ -47,13 +70,28 @@ export default function AdminVideosPage() {
       duration: duration.trim() || '01:00:00',
       description: description.trim() || 'فيديو شرح المحاضرة متاح لمتابعة ومراجعة الدرس.',
       thumbnailUrl: 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&q=80&w=600',
-    });
+      isPublished,
+      allowedStudentIds: accessScope === 'specific' ? allowedStudentIds : [],
+    };
+
+    if (editingVideo) {
+      updateVideo({
+        ...editingVideo,
+        ...payload,
+      });
+      showToast('تم تحديث بيانات وفيديو المحاضرة والصلاحيات بنجاح ✏️');
+    } else {
+      addVideo(payload);
+      showToast('تم رفع ونشر فيديو المحاضرة للطلاب بنجاح 📹');
+    }
 
     setIsAddModalOpen(false);
+    setEditingVideo(null);
     setTitle('');
     setVideoUrl('');
     setDescription('');
-    showToast('تم رفع ونشر فيديو المحاضرة للطلاب بنجاح 📹');
+    setAllowedStudentIds([]);
+    setAccessScope('all');
   };
 
   return (
@@ -65,33 +103,39 @@ export default function AdminVideosPage() {
             <Video className="w-7 h-7 text-rose-500" />
             <span>مكتبة المحاضرات وتسجيلات الدروس 📹</span>
           </h1>
-          <p className="text-xs text-slate-400 mt-1">رفع ونشر فيديوهات الشروحات والتسجيلات للطلاب في جميع المراحل الدراسية</p>
+          <p className="text-xs text-slate-400 mt-1">رفع ونشر فيديوهات الشروحات والتسجيلات للطلاب وتحديد صلاحيات الوصول</p>
         </div>
 
         <button
           type="button"
-          onClick={() => setIsAddModalOpen(true)}
-          className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white font-extrabold text-xs shadow-lg shadow-rose-500/20 flex items-center gap-2 shrink-0 transition"
+          onClick={() => {
+            setEditingVideo(null);
+            setTitle('');
+            setVideoUrl('');
+            setDescription('');
+            setAllowedStudentIds([]);
+            setAccessScope('all');
+            setIsAddModalOpen(true);
+          }}
+          className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 text-white font-bold text-xs shadow-lg shadow-rose-500/20 flex items-center gap-2 shrink-0 transition"
         >
           <Plus className="w-4 h-4" />
-          <span>رفع فيديو درس جديد 🎬</span>
+          <span>رفع فيديو جديد 🎥</span>
         </button>
       </div>
 
-      {/* 📹 RECORDED VIDEO LECTURES GRID */}
+      {/* Videos Grid */}
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-base font-extrabold text-white flex items-center gap-2">
-            <Film className="w-5 h-5 text-rose-400" />
-            <span>الفيديوهات والدروس المنشورة ({videos.length})</span>
-          </h3>
-        </div>
+        <h3 className="text-base font-extrabold text-white flex items-center gap-2">
+          <Film className="w-5 h-5 text-rose-400" />
+          <span>الفيديوهات والتسجيلات المتاحة بالمنصة ({videos.length}):</span>
+        </h3>
 
         {videos.length === 0 ? (
-          <div className="p-12 text-center rounded-3xl glass-panel border space-y-3">
-            <Film className="w-12 h-12 text-slate-600 mx-auto" />
-            <h4 className="text-sm font-bold text-slate-300">لا توجد تسجيلات فيديوهات مضافة بعد</h4>
-            <p className="text-xs text-slate-500">اضغط على زر "رفع فيديو درس جديد 🎬" بالأعلى ونزل أول فيديو لمادتك الدراسية</p>
+          <div className="p-12 text-center rounded-3xl glass-panel border border-dashed border-slate-800 space-y-3">
+            <Video className="w-12 h-12 text-slate-600 mx-auto" />
+            <p className="text-sm font-bold text-slate-400">لا توجد فيديوهات مرفوعة حتى الآن.</p>
+            <p className="text-xs text-slate-500">اضغط على زر "رفع فيديو جديد" لإضافة أول فيديو شروحات للطلاب.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -129,16 +173,26 @@ export default function AdminVideosPage() {
                   <p className="text-xs text-slate-300 line-clamp-2">{vid.description}</p>
                 </div>
 
-                <div className="pt-3 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
-                  <button
-                    type="button"
-                    onClick={() => deleteVideo(vid.id)}
-                    className="p-1.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/40 border border-rose-500/30 text-rose-300 transition flex items-center gap-1"
-                    title="مسح هذا الفيديو"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                    <span>حذف 🗑️</span>
-                  </button>
+                <div className="pt-3 border-t border-slate-800 flex items-center justify-between gap-1 text-xs text-slate-400">
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => handleOpenEditVideo(vid)}
+                      className="px-2.5 py-1.5 rounded-xl bg-purple-600/20 hover:bg-purple-600/40 border border-purple-500/30 text-purple-300 font-bold text-xs transition flex items-center gap-1"
+                      title="تحديد وتخصيص الطلاب المسموح لهم بمشاهدة الفيديو"
+                    >
+                      <span>تحديد من يراه 🎯</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => deleteVideo(vid.id)}
+                      className="p-1.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/40 border border-rose-500/30 text-rose-300 transition"
+                      title="مسح هذا الفيديو"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
 
                   <button
                     type="button"
@@ -146,7 +200,7 @@ export default function AdminVideosPage() {
                     className="px-3 py-1.5 rounded-xl bg-rose-600/20 hover:bg-rose-600/40 text-rose-300 border border-rose-500/30 font-bold text-xs flex items-center gap-1 transition"
                   >
                     <Play className="w-3.5 h-3.5" />
-                    <span>تشغيل الفيديو 🎬</span>
+                    <span>تشغيل 🎬</span>
                   </button>
                 </div>
               </div>
@@ -155,7 +209,7 @@ export default function AdminVideosPage() {
         )}
       </div>
 
-      {/* --- ADD NEW RECORDED VIDEO MODAL --- */}
+      {/* --- ADD / EDIT RECORDED VIDEO MODAL --- */}
       <AnimatePresence>
         {isAddModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md overflow-y-auto">
@@ -168,7 +222,7 @@ export default function AdminVideosPage() {
               <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                 <h3 className="text-base font-extrabold flex items-center gap-2">
                   <Video className="w-5 h-5 text-rose-500" />
-                  <span>رفع ونشر فيديو درس جديد للطلاب</span>
+                  <span>{editingVideo ? 'تعديل الفيديو والتحكم في صلاحيات الوصول 🎯' : 'إضافة وتثبيت فيديو جديد 📹'}</span>
                 </h3>
                 <button type="button" onClick={() => setIsAddModalOpen(false)} className="p-1.5 text-slate-400 hover:text-white">
                   <X className="w-5 h-5" />
@@ -177,25 +231,26 @@ export default function AdminVideosPage() {
 
               <form onSubmit={handleSaveVideo} className="space-y-4 text-xs font-semibold">
                 <div className="space-y-1">
-                  <label className="text-slate-300">عنوان الفيديو أو الدرس</label>
+                  <label className="text-slate-300">عنوان الفيديو / الدرس</label>
                   <input
                     type="text"
                     required
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    placeholder="مثال: فيديو شرح: الجبر والمعادلات التربيعية"
+                    placeholder="مثال: الشرح التفصيلي لدرس التفاضل والتكامل - المحاضرة 1"
                     className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white focus:outline-none focus:border-rose-500"
                   />
                 </div>
 
-                {/* Video Upload or Video Link */}
+                {/* Upload or Link Input */}
                 <div className="space-y-2 p-3 rounded-2xl bg-slate-950 border border-slate-800">
-                  <label className="text-slate-300 font-bold block">طريقة رفع الفيديو</label>
-
-                  <div className="space-y-2">
+                  <label className="text-slate-300 font-bold block">ملف/رابط الفيديو</label>
+                  
+                  <div className="space-y-3">
                     <FileUpload
                       onUploadSuccess={(fileData) => {
                         setVideoUrl(fileData.url);
+                        showToast('تم رفع ملف الفيديو بنجاح! 🚀');
                       }}
                       accept="video/*"
                       label="رفع فيديو من جهازك (MP4 / WebM)"
@@ -226,7 +281,7 @@ export default function AdminVideosPage() {
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-slate-300">الصف الدراسي المستهدف</label>
+                    <label className="text-slate-300">الصف الدراسي المستهدف (صلاحية الوصول)</label>
                     <select
                       value={grade}
                       onChange={(e) => setGrade(e.target.value)}
@@ -241,23 +296,116 @@ export default function AdminVideosPage() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-slate-300">مدة الفيديو</label>
+                  <label className="text-slate-300">مدة الفيديو الرقمية</label>
                   <input
                     type="text"
                     value={duration}
                     onChange={(e) => setDuration(e.target.value)}
-                    placeholder="01:30:00"
+                    placeholder="مثال: 01:25:00"
                     className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white font-mono"
                   />
                 </div>
 
+                <div className="space-y-1 p-3 rounded-2xl bg-slate-950 border border-slate-800">
+                  <label className="text-slate-300 font-bold block">حالة النشر والظهور للطلاب 👁️</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsPublished(true)}
+                      className={`p-2.5 rounded-xl border text-xs font-extrabold flex items-center justify-center gap-2 transition ${
+                        isPublished
+                          ? 'bg-emerald-600 text-white border-emerald-500 shadow-md shadow-emerald-500/20'
+                          : 'bg-slate-900 text-slate-400 border-slate-800'
+                      }`}
+                    >
+                      <span>متاح ومؤكد للطلاب 🟢</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsPublished(false)}
+                      className={`p-2.5 rounded-xl border text-xs font-extrabold flex items-center justify-center gap-2 transition ${
+                        !isPublished
+                          ? 'bg-rose-600 text-white border-rose-500 shadow-md shadow-rose-500/20'
+                          : 'bg-slate-900 text-slate-400 border-slate-800'
+                      }`}
+                    >
+                      <span>مخفي (مسودة للإدارة فقط) 🔒</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Per-Student Access Control (تحديد الطلاب المسموح لهم) */}
+                <div className="space-y-2 p-3.5 rounded-2xl bg-slate-950 border border-slate-800">
+                  <label className="text-slate-300 font-bold block">تحديد إمكانية المشاهدة والوصول 👤 (تخصيص طلاب محددين)</label>
+                  <div className="grid grid-cols-2 gap-2 text-xs font-bold">
+                    <button
+                      type="button"
+                      onClick={() => setAccessScope('all')}
+                      className={`p-2.5 rounded-xl border flex items-center justify-center gap-1.5 transition ${
+                        accessScope === 'all'
+                          ? 'bg-rose-600 text-white border-rose-500 shadow-md'
+                          : 'bg-slate-900 text-slate-400 border-slate-800'
+                      }`}
+                    >
+                      <span>جميع طلاب الصف 🌐</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setAccessScope('specific')}
+                      className={`p-2.5 rounded-xl border flex items-center justify-center gap-1.5 transition ${
+                        accessScope === 'specific'
+                          ? 'bg-rose-600 text-white border-rose-500 shadow-md'
+                          : 'bg-slate-900 text-slate-400 border-slate-800'
+                      }`}
+                    >
+                      <span>طلاب محددون فقط 🎯 ({allowedStudentIds.length} طالب)</span>
+                    </button>
+                  </div>
+
+                  {accessScope === 'specific' && (
+                    <div className="mt-3 space-y-2 pt-2 border-t border-slate-800">
+                      <p className="text-[11px] text-rose-300 font-semibold">حدد الطلاب المسموح لهم بمشاهدة هذا الفيديو:</p>
+                      <div className="max-h-40 overflow-y-auto space-y-1.5 pr-1">
+                        {students.map((st) => {
+                          const isChecked = allowedStudentIds.includes(st.id);
+                          return (
+                            <label
+                              key={st.id}
+                              className={`flex items-center justify-between p-2 rounded-xl border cursor-pointer text-xs transition ${
+                                isChecked ? 'bg-rose-950/60 border-rose-500/50 text-white' : 'bg-slate-900/60 border-slate-800 text-slate-400'
+                              }`}
+                            >
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="checkbox"
+                                  checked={isChecked}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      setAllowedStudentIds([...allowedStudentIds, st.id]);
+                                    } else {
+                                      setAllowedStudentIds(allowedStudentIds.filter((id) => id !== st.id));
+                                    }
+                                  }}
+                                  className="w-4 h-4 accent-rose-500 rounded cursor-pointer"
+                                />
+                                <span className="font-bold">{st.name}</span>
+                              </div>
+                              <span className="text-[10px] font-mono text-slate-500">{st.grade}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 <div className="space-y-1">
-                  <label className="text-slate-300">وصف وفهرس الفيديو</label>
+                  <label className="text-slate-300">وصف وفكرة الفيديو</label>
                   <textarea
                     rows={3}
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    placeholder="اكتب التوضيحات وفهرس محتوى الدرس..."
+                    placeholder="وصف مختصر لمكونات ومواضيع شرح الفيديو..."
                     className="w-full p-3 rounded-xl bg-slate-950 border border-slate-800 text-white"
                   />
                 </div>
@@ -272,10 +420,9 @@ export default function AdminVideosPage() {
                   </button>
                   <button
                     type="submit"
-                    className="px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold shadow-lg shadow-rose-500/20 flex items-center gap-2"
+                    className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 text-white font-extrabold shadow-lg shadow-rose-500/30 transition"
                   >
-                    <Video className="w-4 h-4" />
-                    <span>نشر الفيديو للطلاب 🎬</span>
+                    {editingVideo ? 'حفظ التعديلات والصلاحيات 💾' : 'حفظ ونشر الفيديو 🚀'}
                   </button>
                 </div>
               </form>
@@ -284,44 +431,48 @@ export default function AdminVideosPage() {
         )}
       </AnimatePresence>
 
-      {/* --- PREVIEW VIDEO PLAYER MODAL --- */}
+      {/* --- VIDEO PLAYER MODAL --- */}
       <AnimatePresence>
         {previewVideo && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
             <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
+              initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="max-w-3xl w-full p-6 rounded-3xl bg-slate-900 border border-rose-500/30 shadow-2xl space-y-4 text-white"
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="max-w-4xl w-full p-6 rounded-3xl bg-slate-900 border border-rose-500/30 shadow-2xl space-y-4"
             >
               <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                 <div>
-                  <h3 className="text-base font-extrabold">{previewVideo.title}</h3>
-                  <span className="text-xs text-rose-400 font-mono">{previewVideo.subject} - {previewVideo.grade}</span>
+                  <span className="text-[10px] font-bold text-rose-400 font-mono block">
+                    {previewVideo.subject} | {previewVideo.grade}
+                  </span>
+                  <h3 className="text-base font-extrabold text-white">{previewVideo.title}</h3>
                 </div>
-                <button type="button" onClick={() => setPreviewVideo(null)} className="p-1.5 text-slate-400 hover:text-white">
+                <button
+                  type="button"
+                  onClick={() => setPreviewVideo(null)}
+                  className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition"
+                >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
-              {/* Video Player Box */}
-              <div className="aspect-video rounded-2xl overflow-hidden bg-black border border-slate-800">
-                {(() => {
-                  const { embedUrl, isIframe } = getEmbedVideoUrl(previewVideo.videoUrl);
-                  return isIframe ? (
-                    <iframe
-                      src={embedUrl}
-                      className="w-full h-full border-0"
-                      allowFullScreen
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    />
-                  ) : (
-                    <video src={embedUrl} controls autoPlay className="w-full h-full object-contain" />
-                  );
-                })()}
+              {/* Video Frame */}
+              <div className="relative aspect-video rounded-2xl overflow-hidden bg-black border border-slate-800">
+                {getEmbedVideoUrl(previewVideo.videoUrl).isIframe ? (
+                  <iframe
+                    src={getEmbedVideoUrl(previewVideo.videoUrl).embedUrl}
+                    title={previewVideo.title}
+                    className="w-full h-full border-0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
+                ) : (
+                  <video src={previewVideo.videoUrl} controls autoPlay className="w-full h-full object-contain" />
+                )}
               </div>
 
-              <p className="text-xs text-slate-300 leading-relaxed">{previewVideo.description}</p>
+              <p className="text-xs text-slate-300">{previewVideo.description}</p>
             </motion.div>
           </div>
         )}

@@ -24,6 +24,7 @@ export default function AssignmentsAdminPage() {
     dict,
     assignments,
     createAssignment,
+    updateAssignment,
     deleteAssignment,
     assignmentSubmissions,
     gradeSubmission,
@@ -31,6 +32,7 @@ export default function AssignmentsAdminPage() {
   } = useEduPulse();
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [editingAssignment, setEditingAssignment] = useState<Assignment | null>(null);
   const [selectedSubmission, setSelectedSubmission] = useState<AssignmentSubmission | null>(null);
   const [deleteConfirmAssignment, setDeleteConfirmAssignment] = useState<Assignment | null>(null);
 
@@ -41,27 +43,60 @@ export default function AssignmentsAdminPage() {
   const [description, setDescription] = useState('');
   const [deadline, setDeadline] = useState(new Date(Date.now() + 86400000 * 3).toISOString().slice(0, 16));
   const [maxScore, setMaxScore] = useState(20);
+  const [isPublished, setIsPublished] = useState(true);
+  const [accessScope, setAccessScope] = useState<'all' | 'specific'>('all');
+  const [allowedStudentIds, setAllowedStudentIds] = useState<string[]>([]);
 
   // Grade Form State
   const [gradeScore, setGradeScore] = useState(20);
   const [teacherFeedback, setTeacherFeedback] = useState('');
 
+  const handleOpenEditAsgn = (asgn: Assignment) => {
+    setEditingAssignment(asgn);
+    setTitle(asgn.title);
+    setSubject(asgn.subject);
+    setGrade(asgn.grade);
+    setDescription(asgn.description);
+    setDeadline(new Date(asgn.deadline || Date.now()).toISOString().slice(0, 16));
+    setMaxScore(asgn.maxScore || 20);
+    setIsPublished(asgn.isPublished !== false);
+    if (asgn.allowedStudentIds && asgn.allowedStudentIds.length > 0) {
+      setAccessScope('specific');
+      setAllowedStudentIds(asgn.allowedStudentIds);
+    } else {
+      setAccessScope('all');
+      setAllowedStudentIds([]);
+    }
+    setIsCreateModalOpen(true);
+  };
+
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title || !description) return;
 
-    createAssignment({
+    const payload = {
       title,
       subject,
       grade,
       description,
       deadline: new Date(deadline).toISOString(),
       maxScore,
-    });
+      isPublished,
+      allowedStudentIds: accessScope === 'specific' ? allowedStudentIds : [],
+    };
+
+    if (editingAssignment) {
+      updateAssignment({ ...editingAssignment, ...payload });
+    } else {
+      createAssignment(payload);
+    }
 
     setIsCreateModalOpen(false);
+    setEditingAssignment(null);
     setTitle('');
     setDescription('');
+    setAllowedStudentIds([]);
+    setAccessScope('all');
   };
 
   const handleGradeSubmit = (e: React.FormEvent) => {
@@ -93,7 +128,14 @@ export default function AssignmentsAdminPage() {
         </div>
 
         <button
-          onClick={() => setIsCreateModalOpen(true)}
+          onClick={() => {
+            setEditingAssignment(null);
+            setTitle('');
+            setDescription('');
+            setAllowedStudentIds([]);
+            setAccessScope('all');
+            setIsCreateModalOpen(true);
+          }}
           className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-bold text-xs shadow-lg shadow-amber-500/20 flex items-center gap-2 shrink-0 transition"
         >
           <Plus className="w-4 h-4" />
@@ -101,12 +143,12 @@ export default function AssignmentsAdminPage() {
         </button>
       </div>
 
-      {/* Assignments Roster */}
-      <div className="space-y-6">
+      {/* Assignment List */}
+      <div className="space-y-4">
         {assignments.length === 0 ? (
-          <div className="p-12 text-center rounded-3xl glass-panel border space-y-3">
+          <div className="p-12 text-center rounded-3xl glass-panel border border-dashed border-slate-800 space-y-3">
             <BookOpenCheck className="w-12 h-12 text-slate-600 mx-auto" />
-            <h4 className="text-sm font-bold text-slate-300">لا توجد واجبات مضافة حالياً</h4>
+            <p className="text-sm font-bold text-slate-400">لا توجد واجبات دراسية مسندة حالياً</p>
             <p className="text-xs text-slate-500">اضغط على "إسناد واجب دراسي جديد" لإضافة أول واجب للصفوف</p>
           </div>
         ) : (
@@ -121,11 +163,20 @@ export default function AssignmentsAdminPage() {
                     <span className="text-xs text-slate-400">المادة: {asgn.subject} | {asgn.grade} | الدرجة الكلية: {asgn.maxScore}</span>
                   </div>
 
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2">
                     <div className="flex items-center gap-2 text-xs text-amber-400 font-mono font-bold bg-amber-950/50 px-3 py-1.5 rounded-xl border border-amber-500/20">
                       <Calendar className="w-4 h-4" />
-                      <span>الموعد النهائي: {new Date(asgn.deadline).toLocaleDateString('ar-EG')}</span>
+                      <span>الموعد: {new Date(asgn.deadline).toLocaleDateString('ar-EG')}</span>
                     </div>
+
+                    <button
+                      type="button"
+                      onClick={() => handleOpenEditAsgn(asgn)}
+                      className="px-3 py-1.5 rounded-xl bg-purple-600/20 hover:bg-purple-600/40 border border-purple-500/30 text-purple-300 font-bold text-xs transition flex items-center gap-1"
+                      title="تعديل الواجب وتحديد الطلاب المسموح لهم بالوصول"
+                    >
+                      <span>تحديد من يراه 🎯</span>
+                    </button>
 
                     <button
                       type="button"
@@ -217,14 +268,14 @@ export default function AssignmentsAdminPage() {
               </div>
 
               <p className="text-xs text-slate-300 leading-relaxed bg-slate-950 p-3.5 rounded-2xl border border-slate-800">
-                سيتم حذف هذا الواجب نهائياً مع جميع إجابات وتسليمات الطلاب المتعلقة به. هل أنت أصلًا متأكد من الحذف؟
+                سيتم حذف هذا الواجب نهائياً مع جميع إجابات وتسليمات الطلاب المتعلقة به. هل أنت متأكد من الحذف؟
               </p>
 
-              <div className="flex items-center justify-end gap-3 pt-2">
+              <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-800">
                 <button
                   type="button"
                   onClick={() => setDeleteConfirmAssignment(null)}
-                  className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs transition"
+                  className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 font-bold text-xs hover:bg-slate-700 transition"
                 >
                   إلغاء
                 </button>
@@ -279,12 +330,12 @@ export default function AssignmentsAdminPage() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-slate-300">ملاحظات المعلم وتقييمه</label>
+                  <label className="text-slate-300">ملاحظات المعلم وتقييم الحل</label>
                   <textarea
                     rows={3}
                     value={teacherFeedback}
                     onChange={(e) => setTeacherFeedback(e.target.value)}
-                    placeholder="ملاحظات تفصيلية لتوجيه الطالب..."
+                    placeholder="ملاحظات المعلم وتقييم الحل..."
                     className="w-full p-3 rounded-xl bg-slate-950 border border-slate-800 text-white focus:outline-none focus:border-amber-500"
                   />
                 </div>
@@ -299,9 +350,9 @@ export default function AssignmentsAdminPage() {
                   </button>
                   <button
                     type="submit"
-                    className="px-5 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold shadow-lg shadow-amber-500/20"
+                    className="px-5 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-extrabold shadow-lg shadow-amber-500/20 transition"
                   >
-                    حفظ التقييم والملاحظات
+                    حفظ التقييم 💾
                   </button>
                 </div>
               </form>
@@ -310,10 +361,10 @@ export default function AssignmentsAdminPage() {
         )}
       </AnimatePresence>
 
-      {/* --- CREATE ASSIGNMENT MODAL --- */}
+      {/* --- CREATE / EDIT ASSIGNMENT MODAL --- */}
       <AnimatePresence>
         {isCreateModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md overflow-y-auto text-white">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md text-white overflow-y-auto">
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -321,7 +372,9 @@ export default function AssignmentsAdminPage() {
               className="max-w-md w-full p-6 rounded-3xl bg-slate-900 border border-amber-500/30 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto"
             >
               <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                <h3 className="text-base font-extrabold">{dict.assignments.createAssignment}</h3>
+                <h3 className="text-base font-extrabold">
+                  {editingAssignment ? 'تعديل الواجب والتحكم في صلاحيات الوصول 🎯' : dict.assignments.createAssignment}
+                </h3>
                 <button onClick={() => setIsCreateModalOpen(false)} className="p-1.5 text-slate-400 hover:text-white">
                   <X className="w-5 h-5" />
                 </button>
@@ -352,7 +405,7 @@ export default function AssignmentsAdminPage() {
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-slate-300">الصف الدراسي المستهدف</label>
+                    <label className="text-slate-300">الصف الدراسي المستهدف (صلاحية الوصول)</label>
                     <select
                       value={grade}
                       onChange={(e) => setGrade(e.target.value)}
@@ -368,17 +421,17 @@ export default function AssignmentsAdminPage() {
 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <label className="text-slate-300">تاريخ التسليم النهائي</label>
+                    <label className="text-slate-300">الموعد النهائي لتسليم الواجب</label>
                     <input
                       type="datetime-local"
                       value={deadline}
                       onChange={(e) => setDeadline(e.target.value)}
-                      className="w-full px-3 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white font-mono text-[11px]"
+                      className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white font-mono"
                     />
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-slate-300">الدرجة الكلية</label>
+                    <label className="text-slate-300">الدرجة الكلية للواجب</label>
                     <input
                       type="number"
                       value={maxScore}
@@ -388,13 +441,107 @@ export default function AssignmentsAdminPage() {
                   </div>
                 </div>
 
+                <div className="space-y-1 p-3 rounded-2xl bg-slate-950 border border-slate-800">
+                  <label className="text-slate-300 font-bold block">حالة النشر والظهور للطلاب 👁️</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsPublished(true)}
+                      className={`p-2.5 rounded-xl border text-xs font-extrabold flex items-center justify-center gap-2 transition ${
+                        isPublished
+                          ? 'bg-emerald-600 text-white border-emerald-500 shadow-md shadow-emerald-500/20'
+                          : 'bg-slate-900 text-slate-400 border-slate-800'
+                      }`}
+                    >
+                      <span>متاح ومؤكد للطلاب 🟢</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsPublished(false)}
+                      className={`p-2.5 rounded-xl border text-xs font-extrabold flex items-center justify-center gap-2 transition ${
+                        !isPublished
+                          ? 'bg-rose-600 text-white border-rose-500 shadow-md shadow-rose-500/20'
+                          : 'bg-slate-900 text-slate-400 border-slate-800'
+                      }`}
+                    >
+                      <span>مخفي (مسودة للإدارة فقط) 🔒</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Per-Student Access Control (تحديد الطلاب المسموح لهم) */}
+                <div className="space-y-2 p-3.5 rounded-2xl bg-slate-950 border border-slate-800">
+                  <label className="text-slate-300 font-bold block">تحديد إمكانية المشاهدة والوصول 👤 (تخصيص طلاب محددين)</label>
+                  <div className="grid grid-cols-2 gap-2 text-xs font-bold">
+                    <button
+                      type="button"
+                      onClick={() => setAccessScope('all')}
+                      className={`p-2.5 rounded-xl border flex items-center justify-center gap-1.5 transition ${
+                        accessScope === 'all'
+                          ? 'bg-amber-600 text-white border-amber-500 shadow-md'
+                          : 'bg-slate-900 text-slate-400 border-slate-800'
+                      }`}
+                    >
+                      <span>جميع طلاب الصف 🌐</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setAccessScope('specific')}
+                      className={`p-2.5 rounded-xl border flex items-center justify-center gap-1.5 transition ${
+                        accessScope === 'specific'
+                          ? 'bg-amber-600 text-white border-amber-500 shadow-md'
+                          : 'bg-slate-900 text-slate-400 border-slate-800'
+                      }`}
+                    >
+                      <span>طلاب محددون فقط 🎯 ({allowedStudentIds.length} طالب)</span>
+                    </button>
+                  </div>
+
+                  {accessScope === 'specific' && (
+                    <div className="mt-3 space-y-2 pt-2 border-t border-slate-800">
+                      <p className="text-[11px] text-amber-300 font-semibold">حدد الطلاب المسموح لهم برؤية وتسليم هذا الواجب:</p>
+                      <div className="max-h-40 overflow-y-auto space-y-1.5 pr-1">
+                        {students.map((st) => {
+                          const isChecked = allowedStudentIds.includes(st.id);
+                          return (
+                            <label
+                              key={st.id}
+                              className={`flex items-center justify-between p-2 rounded-xl border cursor-pointer text-xs transition ${
+                                isChecked ? 'bg-amber-950/60 border-amber-500/50 text-white' : 'bg-slate-900/60 border-slate-800 text-slate-400'
+                              }`}
+                            >
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="checkbox"
+                                  checked={isChecked}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      setAllowedStudentIds([...allowedStudentIds, st.id]);
+                                    } else {
+                                      setAllowedStudentIds(allowedStudentIds.filter((id) => id !== st.id));
+                                    }
+                                  }}
+                                  className="w-4 h-4 accent-amber-500 rounded cursor-pointer"
+                                />
+                                <span className="font-bold">{st.name}</span>
+                              </div>
+                              <span className="text-[10px] font-mono text-slate-500">{st.grade}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 <div className="space-y-1">
-                  <label className="text-slate-300">تفاصيل المسائل والمطلوب</label>
+                  <label className="text-slate-300">وصف وتعليمات الواجب</label>
                   <textarea
                     rows={3}
+                    required
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    placeholder="اكتب التوجيهات والمسائل المطلوبة من الكتاب المدرسي..."
+                    placeholder="اكتب الأسئلة والتعليمات أو رابط ملحق الواجب..."
                     className="w-full p-3 rounded-xl bg-slate-950 border border-slate-800 text-white focus:outline-none focus:border-amber-500"
                   />
                 </div>
@@ -409,9 +556,9 @@ export default function AssignmentsAdminPage() {
                   </button>
                   <button
                     type="submit"
-                    className="px-5 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold shadow-lg shadow-amber-500/20"
+                    className="px-5 py-2 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-extrabold shadow-lg shadow-amber-500/20 transition"
                   >
-                    حفظ وإسناد الواجب
+                    {editingAssignment ? 'حفظ التعديلات والصلاحيات 💾' : 'حفظ وإسناد الواجب 🚀'}
                   </button>
                 </div>
               </form>
@@ -419,7 +566,6 @@ export default function AssignmentsAdminPage() {
           </div>
         )}
       </AnimatePresence>
-
     </div>
   );
 }
