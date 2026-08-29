@@ -8,6 +8,7 @@ export interface SessionPayload {
   role: UserRole;
   name?: string;
   email?: string;
+  grade?: string;
   iat: number;
   exp: number;
 }

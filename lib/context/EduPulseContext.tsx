@@ -371,23 +371,33 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
             // Ensure logged student exists in state so activeStudent is never null/blank!
             setStudents((prev) => {
-              const exists = prev.some((s) => s.id === data.user.id);
-              if (!exists) {
-                const loggedStudent: Student = {
-                  id: data.user.id,
-                  name: data.user.name || 'طالب مسجل',
-                  email: data.user.email || '',
-                  avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=250',
-                  parentPhone: '',
-                  studentPhone: '',
-                  grade: 'الصف الثالث الثانوي (Grade 12)',
-                  attendanceRate: 100,
-                  totalPoints: 100,
-                  joinedDate: new Date().toISOString().split('T')[0],
-                };
-                return [loggedStudent, ...prev];
+              const existingIdx = prev.findIndex((s) => s.id === data.user.id);
+              if (existingIdx >= 0) {
+                // If student exists, update their grade ONLY if data.user.grade exists and differs
+                if (data.user.grade && prev[existingIdx].grade !== data.user.grade) {
+                  const updated = [...prev];
+                  updated[existingIdx] = { ...updated[existingIdx], grade: data.user.grade };
+                  saveState('students', updated);
+                  return updated;
+                }
+                return prev;
               }
-              return prev;
+
+              const loggedStudent: Student = {
+                id: data.user.id,
+                name: data.user.name || 'طالب مسجل',
+                email: data.user.email || '',
+                avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=250',
+                parentPhone: '',
+                studentPhone: '',
+                grade: data.user.grade || 'الصف الأول الثانوي (Grade 10)',
+                attendanceRate: 100,
+                totalPoints: 100,
+                joinedDate: new Date().toISOString().split('T')[0],
+              };
+              const updated = [loggedStudent, ...prev];
+              saveState('students', updated);
+              return updated;
             });
           } else if (data.user.role === 'admin') {
             setUserRoleState('admin');

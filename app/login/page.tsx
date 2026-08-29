@@ -39,7 +39,7 @@ function LoginFormContent() {
   const [regEmail, setRegEmail] = useState('');
   const [regParentPhone, setRegParentPhone] = useState('');
   const [regStudentPhone, setRegStudentPhone] = useState('');
-  const [regGrade, setRegGrade] = useState('الصف الثالث الثانوي (Grade 12)');
+  const [regGrade, setRegGrade] = useState('الصف الأول الثانوي (Grade 10)');
   const [regPassword, setRegPassword] = useState('');
 
   const [error, setError] = useState<string | null>(null);
@@ -366,9 +366,9 @@ function LoginFormContent() {
                   onChange={(e) => setRegGrade(e.target.value)}
                   className="w-full px-2.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-[11px] focus:outline-none focus:border-purple-500"
                 >
-                  <option value="الصف الثالث الثانوي (Grade 12)">الصف الثالث الثانوي</option>
-                  <option value="الصف الثاني الثانوي (Grade 11)">الصف الثاني الثانوي</option>
                   <option value="الصف الأول الثانوي (Grade 10)">الصف الأول الثانوي</option>
+                  <option value="الصف الثاني الثانوي (Grade 11)">الصف الثاني الثانوي</option>
+                  <option value="الصف الثالث الثانوي (Grade 12)">الصف الثالث الثانوي</option>
                 </select>
               </div>
 

@@ -14,6 +14,7 @@ export async function GET() {
       role: session.role,
       name: session.name,
       email: session.email,
+      grade: session.grade,
     },
   });
 }

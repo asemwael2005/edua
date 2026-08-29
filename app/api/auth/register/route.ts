@@ -92,6 +92,7 @@ export async function POST(request: NextRequest) {
       role: 'student',
       name: newStudent.name,
       email: newStudent.email,
+      grade: newStudent.grade,
     });
 
     const response = NextResponse.json({
@@ -101,6 +102,7 @@ export async function POST(request: NextRequest) {
         role: 'student',
         name: newStudent.name,
         email: newStudent.email,
+        grade: newStudent.grade,
       },
       student: newStudent,
     });
