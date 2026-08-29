@@ -250,6 +250,7 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
               prevLocal.forEach((s: Student) => {
                 if (!mergedMap.has(s.id)) {
                   mergedMap.set(s.id, s);
+                  syncDB('create', 'students', s);
                 } else {
                   const existing = mergedMap.get(s.id)!;
                   mergedMap.set(s.id, { ...existing, ...s });
@@ -265,7 +266,10 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
               const mergedMap = new Map<string, Session>();
               db.sessions.forEach((s: Session) => mergedMap.set(s.id, s));
               prevLocal.forEach((s: Session) => {
-                if (!mergedMap.has(s.id)) mergedMap.set(s.id, s);
+                if (!mergedMap.has(s.id)) {
+                  mergedMap.set(s.id, s);
+                  syncDB('create', 'sessions', s);
+                }
               });
               const final = Array.from(mergedMap.values());
               saveState('sessions', final);
@@ -277,7 +281,10 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
               const mergedMap = new Map<string, Quiz>();
               db.quizzes.forEach((q: Quiz) => mergedMap.set(q.id, q));
               prevLocal.forEach((q: Quiz) => {
-                if (!mergedMap.has(q.id)) mergedMap.set(q.id, q);
+                if (!mergedMap.has(q.id)) {
+                  mergedMap.set(q.id, q);
+                  syncDB('create', 'quizzes', q);
+                }
               });
               const final = Array.from(mergedMap.values());
               saveState('quizzes', final);
@@ -289,7 +296,10 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
               const mergedMap = new Map<string, Assignment>();
               db.assignments.forEach((a: Assignment) => mergedMap.set(a.id, a));
               prevLocal.forEach((a: Assignment) => {
-                if (!mergedMap.has(a.id)) mergedMap.set(a.id, a);
+                if (!mergedMap.has(a.id)) {
+                  mergedMap.set(a.id, a);
+                  syncDB('create', 'assignments', a);
+                }
               });
               const final = Array.from(mergedMap.values());
               saveState('assignments', final);
@@ -303,7 +313,10 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
               const mergedMap = new Map<string, RecordedVideo>();
               db.videos.forEach((v: RecordedVideo) => mergedMap.set(v.id, v));
               prevLocal.forEach((v: RecordedVideo) => {
-                if (!mergedMap.has(v.id)) mergedMap.set(v.id, v);
+                if (!mergedMap.has(v.id)) {
+                  mergedMap.set(v.id, v);
+                  syncDB('create', 'videos', v);
+                }
               });
               const finalVideos = Array.from(mergedMap.values());
               saveState('videos', finalVideos);
@@ -315,7 +328,10 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
               const mergedMap = new Map<string, QuizSubmission>();
               db.quizSubmissions.forEach((qs: QuizSubmission) => mergedMap.set(qs.id, qs));
               prevLocal.forEach((qs: QuizSubmission) => {
-                if (!mergedMap.has(qs.id)) mergedMap.set(qs.id, qs);
+                if (!mergedMap.has(qs.id)) {
+                  mergedMap.set(qs.id, qs);
+                  syncDB('create', 'quizSubmissions', qs);
+                }
               });
               const final = Array.from(mergedMap.values());
               saveState('quiz_subs', final);
@@ -327,7 +343,10 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
               const mergedMap = new Map<string, AssignmentSubmission>();
               db.assignmentSubmissions.forEach((as: AssignmentSubmission) => mergedMap.set(as.id, as));
               prevLocal.forEach((as: AssignmentSubmission) => {
-                if (!mergedMap.has(as.id)) mergedMap.set(as.id, as);
+                if (!mergedMap.has(as.id)) {
+                  mergedMap.set(as.id, as);
+                  syncDB('create', 'assignmentSubmissions', as);
+                }
               });
               const final = Array.from(mergedMap.values());
               saveState('asgn_subs', final);
