@@ -32,7 +32,6 @@ export default function AdminDashboard() {
     quizSubmissions,
     feedback,
     language,
-    clearAllData,
   } = useEduPulse();
 
   const activeStudentsCount = students.filter((s) => !s.banDetails?.active).length;
@@ -70,14 +69,6 @@ export default function AdminDashboard() {
           </div>
 
           <div className="flex items-center gap-3">
-            <button
-              onClick={clearAllData}
-              className="px-3.5 py-2.5 rounded-xl bg-rose-950/80 hover:bg-rose-900 border border-rose-500/40 text-rose-200 font-bold text-xs shadow-lg transition flex items-center gap-1.5 shrink-0"
-              title="تفريغ كل البيانات التجريبية لبدء إدخال طلابك وموادك الحقيقية"
-            >
-              <span>تصفير المنصة (لبدء العمل الحقيقي) 🧹</span>
-            </button>
-
             <Link
               href="/admin/students"
               className="px-4 py-2.5 rounded-xl bg-white text-brand-900 hover:bg-brand-50 font-bold text-xs shadow-lg transition flex items-center gap-2 shrink-0"

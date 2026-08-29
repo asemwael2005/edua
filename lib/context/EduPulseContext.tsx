@@ -242,8 +242,8 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           if (Array.isArray(db.students)) {
             setStudents((prevLocal) => {
               const mergedMap = new Map<string, Student>();
-              db.students.forEach((s) => mergedMap.set(s.id, s));
-              prevLocal.forEach((s) => {
+              db.students.forEach((s: Student) => mergedMap.set(s.id, s));
+              prevLocal.forEach((s: Student) => {
                 if (!mergedMap.has(s.id)) {
                   mergedMap.set(s.id, s);
                 } else {
@@ -264,8 +264,8 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           if (Array.isArray(db.videos)) {
             setVideos((prevLocal) => {
               const mergedMap = new Map<string, RecordedVideo>();
-              db.videos.forEach((v) => mergedMap.set(v.id, v));
-              prevLocal.forEach((v) => {
+              db.videos.forEach((v: RecordedVideo) => mergedMap.set(v.id, v));
+              prevLocal.forEach((v: RecordedVideo) => {
                 if (!mergedMap.has(v.id)) mergedMap.set(v.id, v);
               });
               const finalVideos = Array.from(mergedMap.values());

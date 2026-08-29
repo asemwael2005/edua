@@ -9,7 +9,6 @@ import {
   ShieldCheck,
   ShieldAlert,
   GraduationCap,
-  RotateCcw,
   UserCheck,
   Menu,
   Sparkles,
@@ -125,14 +124,6 @@ export const Header: React.FC<{ onToggleSidebar?: () => void }> = ({ onToggleSid
             <span className="hidden sm:inline">دخول الحساب</span>
           </Link>
 
-          {/* Reset Mock Data */}
-          <button
-            onClick={resetToDefaultData}
-            title={language === 'ar' ? 'إعادة ضبط البيانات' : 'Reset Mock Data'}
-            className="p-2 rounded-xl text-slate-400 hover:text-amber-400 hover:bg-slate-200/50 dark:hover:bg-slate-800 transition"
-          >
-            <RotateCcw className="w-4.5 h-4.5" />
-          </button>
 
           {/* Language Toggle */}
           <button
