@@ -197,12 +197,21 @@ export default function StudentDashboardPage() {
                 </p>
               </div>
 
-              <Link
-                href={`/student/quizzes/${quiz.id}`}
-                className="w-full py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-extrabold text-xs text-center shadow-lg transition block"
-              >
-                {dict.quizzes.startQuiz} 🚀
-              </Link>
+              {quiz.isOpen ? (
+                <Link
+                  href={`/student/quizzes/${quiz.id}`}
+                  className="w-full py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-extrabold text-xs text-center shadow-lg transition block"
+                >
+                  {dict.quizzes.startQuiz} 🚀
+                </Link>
+              ) : (
+                <button
+                  disabled
+                  className="w-full py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 font-extrabold text-xs text-center cursor-not-allowed block"
+                >
+                  الاختبار مغلق حالياً 🔒
+                </button>
+              )}
             </div>
           ))}
 

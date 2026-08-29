@@ -17,6 +17,7 @@ import {
   ArrowRight,
   Check,
   X,
+  Lock,
   BookOpen,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -66,6 +67,31 @@ export default function InteractiveQuizPlayerPage() {
   }, [isSubmitted, secondsLeft]);
 
   if (!currentStudent || !targetQuiz) return null;
+
+  // Block exam entry if quiz is closed by admin and student hasn't submitted previously
+  if (!targetQuiz.isOpen && !isSubmitted) {
+    return (
+      <BanShield student={currentStudent}>
+        <div className="max-w-xl mx-auto my-12 p-8 text-center rounded-3xl glass-panel border border-rose-500/30 space-y-5 text-white">
+          <div className="w-16 h-16 rounded-2xl bg-rose-500/20 text-rose-400 flex items-center justify-center mx-auto text-2xl font-bold border border-rose-500/30">
+            <Lock className="w-8 h-8" />
+          </div>
+          <div className="space-y-2">
+            <h3 className="text-xl font-extrabold">هذا الاختبار مغلق حالياً 🔒</h3>
+            <p className="text-xs text-slate-300">
+              قام المعلم بإغلاق التقديم لهذا الاختبار. لا يمكن أداء الاختبار أو تقديم إجابات جديدة حالياً.
+            </p>
+          </div>
+          <Link
+            href="/student/quizzes"
+            className="px-6 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs inline-flex items-center gap-2 transition"
+          >
+            <span>العودة لقائمة الاختبارات 👈</span>
+          </Link>
+        </div>
+      </BanShield>
+    );
+  }
 
   const currentQuestion = targetQuiz.questions[currentQIndex];
 

@@ -100,14 +100,21 @@ export default function StudentQuizzesIndexPage() {
                           <span>مراجعة الإجابات والحلول 📊</span>
                         </Link>
                       </div>
-                    ) : (
+                    ) : quiz.isOpen ? (
                       <Link
                         href={`/student/quizzes/${quiz.id}`}
                         className="w-full py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-extrabold text-xs text-center shadow-lg transition flex items-center justify-center gap-2"
                       >
                         <Play className="w-4 h-4" />
-                        <span>بدء هذا الاختبار الآن</span>
+                        <span>بدء هذا الاختبار الآن 🚀</span>
                       </Link>
+                    ) : (
+                      <button
+                        disabled
+                        className="w-full py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-500 font-extrabold text-xs text-center cursor-not-allowed flex items-center justify-center gap-2"
+                      >
+                        <span>الاختبار مغلق حالياً من الإدارة 🔒</span>
+                      </button>
                     )}
                   </div>
                 </div>
