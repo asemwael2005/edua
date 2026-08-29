@@ -181,30 +181,30 @@ export default function StudentDashboardPage() {
         {/* Action Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           
-          {/* Active Quiz Card for Grade */}
-          {activeQuiz && (
-            <div className="p-6 rounded-3xl glass-panel border space-y-4 flex flex-col justify-between">
+          {/* Active Quiz Cards for Grade */}
+          {gradeQuizzes.map((quiz) => (
+            <div key={quiz.id} className="p-6 rounded-3xl glass-panel border space-y-4 flex flex-col justify-between">
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="px-3 py-1 rounded-xl bg-purple-950 text-purple-300 border border-purple-500/30 text-xs font-bold font-mono">
-                    اختبار خاص بصفك
+                    اختبار خاص بصفك 📝
                   </span>
                   <Clock className="w-4 h-4 text-purple-400" />
                 </div>
-                <h3 className="text-base font-extrabold text-white">{activeQuiz.title}</h3>
+                <h3 className="text-base font-extrabold text-white">{quiz.title}</h3>
                 <p className="text-xs text-slate-300">
-                  {activeQuiz.grade} | {activeQuiz.durationMinutes} دقيقة | {activeQuiz.questions.length} أسئلة
+                  {quiz.grade} | {quiz.durationMinutes} دقيقة | {quiz.questions.length} أسئلة
                 </p>
               </div>
 
               <Link
-                href={`/student/quizzes/${activeQuiz.id}`}
+                href={`/student/quizzes/${quiz.id}`}
                 className="w-full py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-extrabold text-xs text-center shadow-lg transition block"
               >
-                {dict.quizzes.startQuiz}
+                {dict.quizzes.startQuiz} 🚀
               </Link>
             </div>
-          )}
+          ))}
 
           {/* Interactive Presentation Deck Card */}
           {activeSession && (
