@@ -34,6 +34,7 @@ export default function QuizzesAdminPage() {
   const [quizTitle, setQuizTitle] = useState('');
   const [quizSubject, setQuizSubject] = useState('الرياضيات');
   const [quizGrade, setQuizGrade] = useState('الصف الأول الثانوي (Grade 10)');
+  const [quizIsPublished, setQuizIsPublished] = useState(true);
   const [quizDuration, setQuizDuration] = useState(15);
   const [quizStart, setQuizStart] = useState(new Date().toISOString().slice(0, 16));
   const [quizEnd, setQuizEnd] = useState(new Date(Date.now() + 86400000 * 3).toISOString().slice(0, 16));
@@ -86,6 +87,7 @@ export default function QuizzesAdminPage() {
       scheduledEnd: new Date(quizEnd).toISOString(),
       isOpen: true,
       questions,
+      isPublished: quizIsPublished,
     });
 
     setIsCreateModalOpen(false);
@@ -298,15 +300,16 @@ export default function QuizzesAdminPage() {
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-slate-300">الصف الدراسي المستهدف</label>
+                    <label className="text-slate-300">الصف الدراسي المستهدف (صلاحية الوصول)</label>
                     <select
                       value={quizGrade}
                       onChange={(e) => setQuizGrade(e.target.value)}
-                      className="w-full px-2 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white text-[11px]"
+                      className="w-full px-2 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white text-[11px] focus:border-purple-500 focus:outline-none"
                     >
                       <option value="الصف الأول الثانوي (Grade 10)">الصف الأول الثانوي (Grade 10)</option>
                       <option value="الصف الثاني الثانوي (Grade 11)">الصف الثاني الثانوي (Grade 11)</option>
                       <option value="الصف الثالث الثانوي (Grade 12)">الصف الثالث الثانوي (Grade 12)</option>
+                      <option value="all">جميع المراحل الدراسية 🌐 (متاح للجميع)</option>
                     </select>
                   </div>
 
@@ -318,6 +321,34 @@ export default function QuizzesAdminPage() {
                       onChange={(e) => setQuizDuration(Number(e.target.value))}
                       className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white font-mono"
                     />
+                  </div>
+                </div>
+
+                <div className="space-y-1 p-3 rounded-2xl bg-slate-950 border border-slate-800">
+                  <label className="text-slate-300 font-bold block">حالة النشر والظهور للطلاب 👁️</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setQuizIsPublished(true)}
+                      className={`p-2.5 rounded-xl border text-xs font-extrabold flex items-center justify-center gap-2 transition ${
+                        quizIsPublished
+                          ? 'bg-emerald-600 text-white border-emerald-500 shadow-md shadow-emerald-500/20'
+                          : 'bg-slate-900 text-slate-400 border-slate-800'
+                      }`}
+                    >
+                      <span>متاح ومؤكد للطلاب 🟢</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setQuizIsPublished(false)}
+                      className={`p-2.5 rounded-xl border text-xs font-extrabold flex items-center justify-center gap-2 transition ${
+                        !quizIsPublished
+                          ? 'bg-rose-600 text-white border-rose-500 shadow-md shadow-rose-500/20'
+                          : 'bg-slate-900 text-slate-400 border-slate-800'
+                      }`}
+                    >
+                      <span>مخفي (مسودة للإدارة فقط) 🔒</span>
+                    </button>
                   </div>
                 </div>
 

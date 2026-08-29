@@ -361,6 +361,7 @@ export default function AssignmentsAdminPage() {
                       <option value="الصف الأول الثانوي (Grade 10)">الصف الأول الثانوي (Grade 10)</option>
                       <option value="الصف الثاني الثانوي (Grade 11)">الصف الثاني الثانوي (Grade 11)</option>
                       <option value="الصف الثالث الثانوي (Grade 12)">الصف الثالث الثانوي (Grade 12)</option>
+                      <option value="all">جميع المراحل الدراسية 🌐 (متاح للجميع)</option>
                     </select>
                   </div>
                 </div>

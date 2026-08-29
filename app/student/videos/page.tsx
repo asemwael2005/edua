@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { useEduPulse } from '@/lib/context/EduPulseContext';
 import { BanShield } from '@/components/BanShield';
 import { RecordedVideo } from '@/types/edupulse';
-import { isMatchingGrade } from '@/lib/gradeUtils';
+import { isMatchingGrade, isContentVisibleToStudent } from '@/lib/gradeUtils';
 import { getEmbedVideoUrl } from '@/lib/videoUtils';
 import { Video, Play, Eye, X, Film, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -16,12 +16,8 @@ export default function StudentVideosPage() {
   const currentStudent = activeStudent || students[0];
   if (!currentStudent) return null;
 
-  // Display all uploaded videos (showing grade-matching videos first)
-  const displayedVideos = [...videos].sort((a, b) => {
-    const matchA = isMatchingGrade(a.grade, currentStudent.grade) ? 1 : 0;
-    const matchB = isMatchingGrade(b.grade, currentStudent.grade) ? 1 : 0;
-    return matchB - matchA;
-  });
+  // Display videos strictly matching current student's grade level and published status
+  const displayedVideos = videos.filter((vid) => isContentVisibleToStudent(vid, currentStudent.grade));
 
   return (
     <BanShield student={currentStudent}>

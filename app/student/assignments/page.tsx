@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { useEduPulse } from '@/lib/context/EduPulseContext';
 import { BanShield } from '@/components/BanShield';
 import { Assignment } from '@/types/edupulse';
-import { isMatchingGrade } from '@/lib/gradeUtils';
+import { isContentVisibleToStudent } from '@/lib/gradeUtils';
 import { BookOpenCheck, Upload, Calendar, CheckCircle2, Clock, MessageSquare, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -16,8 +16,8 @@ export default function StudentAssignmentsPage() {
 
   if (!activeStudent) return null;
 
-  // Filter assignments strictly for active student's grade level
-  const filteredAssignments = assignments.filter((a) => isMatchingGrade(a.grade, activeStudent.grade));
+  // Filter assignments strictly for active student's grade level and published status
+  const filteredAssignments = assignments.filter((a) => isContentVisibleToStudent(a, activeStudent.grade));
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

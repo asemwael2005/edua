@@ -4,7 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { useEduPulse } from '@/lib/context/EduPulseContext';
 import { BanShield } from '@/components/BanShield';
-import { isMatchingGrade } from '@/lib/gradeUtils';
+import { isContentVisibleToStudent } from '@/lib/gradeUtils';
 import { FileCheck2, Clock, CheckCircle2, Play, Award, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -14,8 +14,8 @@ export default function StudentQuizzesIndexPage() {
   const currentStudent = activeStudent || students[0];
   if (!currentStudent) return null;
 
-  // Filter quizzes strictly for current student's grade level
-  const filteredQuizzes = quizzes.filter((q) => isMatchingGrade(q.grade, currentStudent.grade));
+  // Filter quizzes strictly for current student's grade level and published status
+  const filteredQuizzes = quizzes.filter((q) => isContentVisibleToStudent(q, currentStudent.grade));
 
   return (
     <BanShield student={currentStudent}>

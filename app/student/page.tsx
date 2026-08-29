@@ -3,7 +3,7 @@
 import React from 'react';
 import { useEduPulse } from '@/lib/context/EduPulseContext';
 import { BanShield } from '@/components/BanShield';
-import { isMatchingGrade } from '@/lib/gradeUtils';
+import { isMatchingGrade, isContentVisibleToStudent } from '@/lib/gradeUtils';
 import { normalizeAndValidateUrl } from '@/lib/videoUtils';
 import { LiveStreamBanner } from '@/components/LiveStreamBanner';
 import {
@@ -60,19 +60,19 @@ export default function StudentDashboardPage() {
     );
   }
 
-  // Filter content strictly for the student's grade level
+  // Filter content strictly for the student's grade level and published status
   const gradeStudents = students.filter((s) => isMatchingGrade(s.grade, currentStudent.grade));
   const sortedGradeStudents = [...gradeStudents].sort((a, b) => b.totalPoints - a.totalPoints);
   const studentRank = sortedGradeStudents.findIndex((s) => s.id === currentStudent.id) + 1 || 1;
 
-  const gradeQuizzes = quizzes.filter((q) => isMatchingGrade(q.grade, currentStudent.grade));
-  const activeQuiz = gradeQuizzes.find((q) => q.isOpen) || gradeQuizzes[0] || quizzes[0];
+  const gradeQuizzes = quizzes.filter((q) => isContentVisibleToStudent(q, currentStudent.grade));
+  const activeQuiz = gradeQuizzes.find((q) => q.isOpen) || gradeQuizzes[0];
 
-  const gradeAssignments = assignments.filter((a) => isMatchingGrade(a.grade, currentStudent.grade));
-  const activeAssignment = gradeAssignments[0] || assignments[0];
+  const gradeAssignments = assignments.filter((a) => isContentVisibleToStudent(a, currentStudent.grade));
+  const activeAssignment = gradeAssignments[0];
 
-  const gradeSessions = sessions.filter((s) => isMatchingGrade(s.grade, currentStudent.grade));
-  const activeSession = gradeSessions[0] || sessions[0];
+  const gradeSessions = sessions.filter((s) => isContentVisibleToStudent(s, currentStudent.grade));
+  const activeSession = gradeSessions[0];
 
   return (
     <BanShield student={currentStudent}>
