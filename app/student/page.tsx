@@ -1,6 +1,7 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
+import { ChangeGradeModal } from '@/components/ChangeGradeModal';
 import { useEduPulse } from '@/lib/context/EduPulseContext';
 import { BanShield } from '@/components/BanShield';
 import { isMatchingGrade, isContentVisibleToStudent } from '@/lib/gradeUtils';
@@ -25,6 +26,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 
 export default function StudentDashboardPage() {
+  const [isChangeGradeOpen, setIsChangeGradeOpen] = useState(false);
   const {
     dict,
     activeStudent,
@@ -93,9 +95,21 @@ export default function StudentDashboardPage() {
                 className="w-16 h-16 rounded-2xl object-cover border-2 border-emerald-400 shadow-xl shrink-0"
               />
               <div className="space-y-1">
-                <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 text-xs font-bold">
-                  <GraduationCap className="w-3.5 h-3.5" />
-                  <span>{currentStudent.grade}</span>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 text-xs font-bold">
+                    <GraduationCap className="w-3.5 h-3.5" />
+                    <span>{currentStudent.grade}</span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setIsChangeGradeOpen(true)}
+                    className="px-2.5 py-0.5 rounded-full bg-emerald-600/30 hover:bg-emerald-600/50 border border-emerald-400/40 text-emerald-200 text-[11px] font-bold transition"
+                    title="تعديل أو تغيير الصف الدراسي للحساب"
+                  >
+                    تعديل المرحلة ✏️
+                  </button>
+                  <ChangeGradeModal isOpen={isChangeGradeOpen} onClose={() => setIsChangeGradeOpen(false)} />
                 </div>
                 <h1 className="text-2xl font-extrabold tracking-tight">أهلاً بك يا {currentStudent.name} 👋</h1>
                 <p className="text-xs text-slate-300">مرحباً بك في منصة إديو بلس. تم تخصيص المحتوى بالكامل لـ ({currentStudent.grade}).</p>

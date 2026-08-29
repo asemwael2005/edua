@@ -1,6 +1,7 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
+import { ChangeGradeModal } from '@/components/ChangeGradeModal';
 import { useEduPulse } from '@/lib/context/EduPulseContext';
 import {
   Globe,
@@ -20,6 +21,7 @@ import { usePathname } from 'next/navigation';
 
 export const Header: React.FC<{ onToggleSidebar?: () => void }> = ({ onToggleSidebar }) => {
   const pathname = usePathname();
+  const [isChangeGradeOpen, setIsChangeGradeOpen] = useState(false);
   const {
     language,
     setLanguage,
@@ -96,6 +98,22 @@ export const Header: React.FC<{ onToggleSidebar?: () => void }> = ({ onToggleSid
         <div className="flex items-center gap-2.5">
 
 
+
+          {/* Change Grade Button for Students */}
+          {userRole === 'student' && (
+            <>
+              <button
+                type="button"
+                onClick={() => setIsChangeGradeOpen(true)}
+                className="px-3 py-1.5 rounded-xl border border-emerald-500/30 bg-emerald-950/40 hover:bg-emerald-900/60 text-emerald-300 text-xs font-extrabold transition flex items-center gap-1.5"
+                title="تغيير الصف الدراسي للحساب"
+              >
+                <GraduationCap className="w-4 h-4 text-emerald-400" />
+                <span className="hidden sm:inline">تغيير الصف 🎓</span>
+              </button>
+              <ChangeGradeModal isOpen={isChangeGradeOpen} onClose={() => setIsChangeGradeOpen(false)} />
+            </>
+          )}
 
           {/* Logout Button */}
           <button
