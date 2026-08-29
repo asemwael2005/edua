@@ -239,13 +239,40 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       .then((data) => {
         if (data && data.success && data.db) {
           const db = data.db;
-          if (Array.isArray(db.students)) setStudents(db.students);
+          if (Array.isArray(db.students)) {
+            setStudents((prevLocal) => {
+              const mergedMap = new Map<string, Student>();
+              db.students.forEach((s) => mergedMap.set(s.id, s));
+              prevLocal.forEach((s) => {
+                if (!mergedMap.has(s.id)) {
+                  mergedMap.set(s.id, s);
+                } else {
+                  const existing = mergedMap.get(s.id)!;
+                  mergedMap.set(s.id, { ...existing, ...s });
+                }
+              });
+              const finalStudents = Array.from(mergedMap.values());
+              saveState('students', finalStudents);
+              return finalStudents;
+            });
+          }
           if (Array.isArray(db.sessions)) setSessions(db.sessions);
           if (Array.isArray(db.quizzes)) setQuizzes(db.quizzes);
           if (Array.isArray(db.assignments)) setAssignments(db.assignments);
           if (Array.isArray(db.curriculum)) setCurriculum(db.curriculum);
           if (Array.isArray(db.feedback)) setFeedback(db.feedback);
-          if (Array.isArray(db.videos)) setVideos(db.videos);
+          if (Array.isArray(db.videos)) {
+            setVideos((prevLocal) => {
+              const mergedMap = new Map<string, RecordedVideo>();
+              db.videos.forEach((v) => mergedMap.set(v.id, v));
+              prevLocal.forEach((v) => {
+                if (!mergedMap.has(v.id)) mergedMap.set(v.id, v);
+              });
+              const finalVideos = Array.from(mergedMap.values());
+              saveState('videos', finalVideos);
+              return finalVideos;
+            });
+          }
           if (Array.isArray(db.quizSubmissions)) setQuizSubmissions(db.quizSubmissions);
           if (Array.isArray(db.assignmentSubmissions)) setAssignmentSubmissions(db.assignmentSubmissions);
           if (Array.isArray(db.gradeLogs)) setGradeLogs(db.gradeLogs);
