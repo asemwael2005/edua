@@ -86,6 +86,7 @@ interface EduPulseContextType {
   createSession: (sessionData: Omit<Session, 'id' | 'attendance' | 'studentProgress'>) => void;
   deleteSession: (sessionId: string) => void;
   createQuiz: (quiz: Omit<Quiz, 'id'>) => void;
+  updateQuiz: (quiz: Quiz) => void;
   toggleQuizStatus: (quizId: string) => void;
   deleteQuiz: (quizId: string) => void;
   submitQuiz: (submission: Omit<QuizSubmission, 'id' | 'submittedAt'>) => void;
@@ -664,6 +665,14 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     showToast(language === 'ar' ? 'تمت إضافة الاختبار الإلكتروني' : 'Quiz created successfully');
   };
 
+  const updateQuiz = (updatedQuiz: Quiz) => {
+    const updated = quizzes.map((q) => (q.id === updatedQuiz.id ? updatedQuiz : q));
+    setQuizzes(updated);
+    saveState('quizzes', updated);
+    syncDB('update', 'quizzes', updatedQuiz);
+    showToast(language === 'ar' ? 'تم تحديث بيانات وصلاحيات الاختبار بنجاح ✏️' : 'Quiz updated successfully');
+  };
+
   const toggleQuizStatus = (quizId: string) => {
     const updated = quizzes.map((q) => (q.id === quizId ? { ...q, isOpen: !q.isOpen } : q));
     setQuizzes(updated);
@@ -1006,6 +1015,7 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         createSession,
         deleteSession,
         createQuiz,
+        updateQuiz,
         toggleQuizStatus,
         deleteQuiz,
         submitQuiz,

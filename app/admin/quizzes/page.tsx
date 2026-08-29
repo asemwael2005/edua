@@ -24,9 +24,10 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function QuizzesAdminPage() {
-  const { dict, quizzes, createQuiz, toggleQuizStatus, deleteQuiz, quizSubmissions, students } = useEduPulse();
+  const { dict, quizzes, createQuiz, updateQuiz, toggleQuizStatus, deleteQuiz, quizSubmissions, students } = useEduPulse();
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [editingQuiz, setEditingQuiz] = useState<Quiz | null>(null);
   const [analyticsQuiz, setAnalyticsQuiz] = useState<Quiz | null>(null);
   const [deleteConfirmQuiz, setDeleteConfirmQuiz] = useState<Quiz | null>(null);
 
@@ -42,6 +43,24 @@ export default function QuizzesAdminPage() {
   const [quizEnd, setQuizEnd] = useState(new Date(Date.now() + 86400000 * 3).toISOString().slice(0, 16));
 
   const [questions, setQuestions] = useState<Question[]>([]);
+
+  const handleOpenEdit = (quiz: Quiz) => {
+    setEditingQuiz(quiz);
+    setQuizTitle(quiz.title);
+    setQuizSubject(quiz.subject);
+    setQuizGrade(quiz.grade);
+    setQuizIsPublished(quiz.isPublished !== false);
+    setQuizDuration(quiz.durationMinutes);
+    setQuestions(quiz.questions || []);
+    if (quiz.allowedStudentIds && quiz.allowedStudentIds.length > 0) {
+      setAccessScope('specific');
+      setAllowedStudentIds(quiz.allowedStudentIds);
+    } else {
+      setAccessScope('all');
+      setAllowedStudentIds([]);
+    }
+    setIsCreateModalOpen(true);
+  };
 
   // Question Creator Temp State
   const [tempQText, setTempQText] = useState('');
@@ -80,22 +99,31 @@ export default function QuizzesAdminPage() {
     e.preventDefault();
     if (!quizTitle || questions.length === 0) return;
 
-    createQuiz({
+    const payload = {
       title: quizTitle,
       subject: quizSubject,
       grade: quizGrade,
       durationMinutes: quizDuration,
       scheduledStart: new Date(quizStart).toISOString(),
       scheduledEnd: new Date(quizEnd).toISOString(),
-      isOpen: true,
+      isOpen: editingQuiz ? editingQuiz.isOpen : true,
       questions,
       isPublished: quizIsPublished,
       allowedStudentIds: accessScope === 'specific' ? allowedStudentIds : [],
-    });
+    };
+
+    if (editingQuiz) {
+      updateQuiz({ ...editingQuiz, ...payload });
+    } else {
+      createQuiz(payload);
+    }
 
     setIsCreateModalOpen(false);
+    setEditingQuiz(null);
     setQuizTitle('');
     setQuestions([]);
+    setAllowedStudentIds([]);
+    setAccessScope('all');
   };
 
   const handleConfirmDelete = () => {
@@ -119,7 +147,14 @@ export default function QuizzesAdminPage() {
 
         <button
           type="button"
-          onClick={() => setIsCreateModalOpen(true)}
+          onClick={() => {
+            setEditingQuiz(null);
+            setQuizTitle('');
+            setQuestions([]);
+            setAllowedStudentIds([]);
+            setAccessScope('all');
+            setIsCreateModalOpen(true);
+          }}
           className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs shadow-lg shadow-purple-500/20 flex items-center gap-2 shrink-0 transition"
         >
           <Plus className="w-4 h-4" />
@@ -156,6 +191,16 @@ export default function QuizzesAdminPage() {
                     >
                       {quiz.isOpen ? <ToggleRight className="w-4 h-4 text-emerald-400" /> : <ToggleLeft className="w-4 h-4 text-rose-400" />}
                       <span>{quiz.isOpen ? dict.quizzes.open : dict.quizzes.closed}</span>
+                    </button>
+
+                    {/* Edit Quiz / Access Control Button */}
+                    <button
+                      type="button"
+                      onClick={() => handleOpenEdit(quiz)}
+                      className="px-3 py-1.5 rounded-xl bg-purple-600/20 hover:bg-purple-600/40 border border-purple-500/40 text-purple-300 font-bold text-xs transition flex items-center gap-1"
+                      title="تعديل الاختبار والتحكم في صلاحيات الوصول للطلاب"
+                    >
+                      <span>تحديد من يراه 🎯</span>
                     </button>
 
                     {/* Delete Quiz Button */}
@@ -272,7 +317,9 @@ export default function QuizzesAdminPage() {
               className="max-w-2xl w-full p-6 rounded-3xl bg-slate-900 border border-purple-500/30 shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto text-white"
             >
               <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                <h3 className="text-lg font-extrabold">{dict.quizzes.createQuiz}</h3>
+                <h3 className="text-lg font-extrabold">
+                  {editingQuiz ? 'تعديل الاختبار والتحكم في صلاحيات الوصول 🎯' : dict.quizzes.createQuiz}
+                </h3>
                 <button type="button" onClick={() => setIsCreateModalOpen(false)} className="p-1.5 text-slate-400 hover:text-white">
                   <X className="w-5 h-5" />
                 </button>
