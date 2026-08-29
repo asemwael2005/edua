@@ -174,7 +174,7 @@ export default function QuizzesAdminPage() {
             >
               <div className="space-y-3">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="px-3 py-1 rounded-xl bg-purple-950/80 text-purple-300 border border-purple-500/30 text-xs font-bold font-mono truncate max-w-[60%]">
+                  <span className="px-3 py-1 rounded-xl bg-purple-950/80 text-purple-300 border border-purple-500/30 text-xs font-bold font-mono">
                     {quiz.subject} | {quiz.grade}
                   </span>
 
@@ -197,10 +197,18 @@ export default function QuizzesAdminPage() {
                     <button
                       type="button"
                       onClick={() => handleOpenEdit(quiz)}
-                      className="px-3 py-1.5 rounded-xl bg-purple-600/20 hover:bg-purple-600/40 border border-purple-500/40 text-purple-300 font-bold text-xs transition flex items-center gap-1"
+                      className={`px-3 py-1.5 rounded-xl border font-bold text-xs transition flex items-center gap-1 ${
+                        quiz.allowedStudentIds && quiz.allowedStudentIds.length > 0
+                          ? 'bg-purple-600/30 hover:bg-purple-600/50 border-purple-500/60 text-purple-200'
+                          : 'bg-slate-800/60 hover:bg-slate-800 border-slate-700 text-slate-300'
+                      }`}
                       title="تعديل الاختبار والتحكم في صلاحيات الوصول للطلاب"
                     >
-                      <span>تحديد من يراه 🎯</span>
+                      <span>
+                        {quiz.allowedStudentIds && quiz.allowedStudentIds.length > 0
+                          ? `مخصص لـ (${quiz.allowedStudentIds.length}) طلاب 🎯`
+                          : 'تحديد من يراه 🌐'}
+                      </span>
                     </button>
 
                     {/* Delete Quiz Button */}
