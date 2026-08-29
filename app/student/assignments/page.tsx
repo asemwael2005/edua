@@ -16,8 +16,8 @@ export default function StudentAssignmentsPage() {
 
   if (!activeStudent) return null;
 
-  // Filter assignments strictly for active student's grade level and published status
-  const filteredAssignments = assignments.filter((a) => isContentVisibleToStudent(a, activeStudent.grade));
+  // Filter assignments strictly for active student's grade level, published status, and student whitelist
+  const filteredAssignments = assignments.filter((a) => isContentVisibleToStudent(a, activeStudent.grade, activeStudent.id));
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

@@ -43,14 +43,30 @@ export function isMatchingGrade(itemGrade?: string, studentGrade?: string): bool
 }
 
 /**
- * Checks if content is published and matching the student's grade level.
+ * Checks if content is published, matching the student's grade level,
+ * and matching per-student allowed whitelist if specified.
  */
 export function isContentVisibleToStudent(
-  item: { grade?: string; isPublished?: boolean; isHidden?: boolean; status?: string },
-  studentGrade?: string
+  item: {
+    grade?: string;
+    isPublished?: boolean;
+    isHidden?: boolean;
+    status?: string;
+    allowedStudentIds?: string[];
+  },
+  studentGrade?: string,
+  studentId?: string
 ): boolean {
   if (item.isPublished === false || item.isHidden === true || item.status === 'draft' || item.status === 'hidden') {
     return false;
   }
+
+  // Per-student explicit whitelist check
+  if (item.allowedStudentIds && item.allowedStudentIds.length > 0) {
+    if (!studentId || !item.allowedStudentIds.includes(studentId)) {
+      return false;
+    }
+  }
+
   return isMatchingGrade(item.grade, studentGrade);
 }

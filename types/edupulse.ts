@@ -80,6 +80,7 @@ export interface Session {
   liveMeetingUrl?: string; // Zoom / Meet / Jitsi link
   videoUrl?: string;       // Uploaded video MP4 or YouTube embed
   isPublished?: boolean;
+  allowedStudentIds?: string[];
 }
 
 export interface RecordedVideo {
@@ -94,6 +95,7 @@ export interface RecordedVideo {
   createdAt: string;
   viewsCount: number;
   isPublished?: boolean;
+  allowedStudentIds?: string[];
 }
 
 export type QuestionType = 'mcq' | 'true_false';
@@ -138,6 +140,7 @@ export interface Quiz {
   isOpen: boolean;        // Manual toggle
   questions: Question[];
   isPublished?: boolean;
+  allowedStudentIds?: string[];
 }
 
 export interface AssignmentSubmission {
@@ -159,10 +162,13 @@ export interface Assignment {
   subject: string;
   grade: string;
   description: string;
-  deadline: string; // ISO
+  deadline: string;
   maxScore: number;
-  createdAt: string;
+  dueDate?: string;
+  totalPoints?: number;
+  createdAt?: string;
   isPublished?: boolean;
+  allowedStudentIds?: string[];
 }
 
 export interface CurriculumMilestone {

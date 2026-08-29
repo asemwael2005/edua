@@ -14,8 +14,8 @@ export default function StudentQuizzesIndexPage() {
   const currentStudent = activeStudent || students[0];
   if (!currentStudent) return null;
 
-  // Filter quizzes strictly for current student's grade level and published status
-  const filteredQuizzes = quizzes.filter((q) => isContentVisibleToStudent(q, currentStudent.grade));
+  // Filter quizzes strictly for current student's grade level, published status, and student whitelist
+  const filteredQuizzes = quizzes.filter((q) => isContentVisibleToStudent(q, currentStudent.grade, currentStudent.id));
 
   return (
     <BanShield student={currentStudent}>

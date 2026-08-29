@@ -36,6 +36,8 @@ export default function QuizzesAdminPage() {
   const [quizGrade, setQuizGrade] = useState('الصف الأول الثانوي (Grade 10)');
   const [quizIsPublished, setQuizIsPublished] = useState(true);
   const [quizDuration, setQuizDuration] = useState(15);
+  const [accessScope, setAccessScope] = useState<'all' | 'specific'>('all');
+  const [allowedStudentIds, setAllowedStudentIds] = useState<string[]>([]);
   const [quizStart, setQuizStart] = useState(new Date().toISOString().slice(0, 16));
   const [quizEnd, setQuizEnd] = useState(new Date(Date.now() + 86400000 * 3).toISOString().slice(0, 16));
 
@@ -88,6 +90,7 @@ export default function QuizzesAdminPage() {
       isOpen: true,
       questions,
       isPublished: quizIsPublished,
+      allowedStudentIds: accessScope === 'specific' ? allowedStudentIds : [],
     });
 
     setIsCreateModalOpen(false);
@@ -350,6 +353,71 @@ export default function QuizzesAdminPage() {
                       <span>مخفي (مسودة للإدارة فقط) 🔒</span>
                     </button>
                   </div>
+                </div>
+
+                {/* Per-Student Access Control (تحديد الطلاب المسموح لهم) */}
+                <div className="space-y-2 p-3.5 rounded-2xl bg-slate-950 border border-slate-800">
+                  <label className="text-slate-300 font-bold block">تحديد إمكانية المشاهدة والوصول 👤 (تخصيص طلاب محددين)</label>
+                  <div className="grid grid-cols-2 gap-2 text-xs font-bold">
+                    <button
+                      type="button"
+                      onClick={() => setAccessScope('all')}
+                      className={`p-2.5 rounded-xl border flex items-center justify-center gap-1.5 transition ${
+                        accessScope === 'all'
+                          ? 'bg-purple-600 text-white border-purple-500 shadow-md'
+                          : 'bg-slate-900 text-slate-400 border-slate-800'
+                      }`}
+                    >
+                      <span>جميع طلاب الصف 🌐</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setAccessScope('specific')}
+                      className={`p-2.5 rounded-xl border flex items-center justify-center gap-1.5 transition ${
+                        accessScope === 'specific'
+                          ? 'bg-purple-600 text-white border-purple-500 shadow-md'
+                          : 'bg-slate-900 text-slate-400 border-slate-800'
+                      }`}
+                    >
+                      <span>طلاب محددون فقط 🎯 ({allowedStudentIds.length} طالب)</span>
+                    </button>
+                  </div>
+
+                  {accessScope === 'specific' && (
+                    <div className="mt-3 space-y-2 pt-2 border-t border-slate-800">
+                      <p className="text-[11px] text-purple-300 font-semibold">حدد الطلاب المسموح لهم برؤية وأداء هذا الاختبار:</p>
+                      <div className="max-h-40 overflow-y-auto space-y-1.5 pr-1">
+                        {students.map((st) => {
+                          const isChecked = allowedStudentIds.includes(st.id);
+                          return (
+                            <label
+                              key={st.id}
+                              className={`flex items-center justify-between p-2 rounded-xl border cursor-pointer text-xs transition ${
+                                isChecked ? 'bg-purple-950/60 border-purple-500/50 text-white' : 'bg-slate-900/60 border-slate-800 text-slate-400'
+                              }`}
+                            >
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="checkbox"
+                                  checked={isChecked}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      setAllowedStudentIds([...allowedStudentIds, st.id]);
+                                    } else {
+                                      setAllowedStudentIds(allowedStudentIds.filter((id) => id !== st.id));
+                                    }
+                                  }}
+                                  className="w-4 h-4 accent-purple-500 rounded cursor-pointer"
+                                />
+                                <span className="font-bold">{st.name}</span>
+                              </div>
+                              <span className="text-[10px] font-mono text-slate-500">{st.grade}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Added Questions List Preview */}

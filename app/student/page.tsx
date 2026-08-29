@@ -65,13 +65,13 @@ export default function StudentDashboardPage() {
   const sortedGradeStudents = [...gradeStudents].sort((a, b) => b.totalPoints - a.totalPoints);
   const studentRank = sortedGradeStudents.findIndex((s) => s.id === currentStudent.id) + 1 || 1;
 
-  const gradeQuizzes = quizzes.filter((q) => isContentVisibleToStudent(q, currentStudent.grade));
+  const gradeQuizzes = quizzes.filter((q) => isContentVisibleToStudent(q, currentStudent.grade, currentStudent.id));
   const activeQuiz = gradeQuizzes.find((q) => q.isOpen) || gradeQuizzes[0];
 
-  const gradeAssignments = assignments.filter((a) => isContentVisibleToStudent(a, currentStudent.grade));
+  const gradeAssignments = assignments.filter((a) => isContentVisibleToStudent(a, currentStudent.grade, currentStudent.id));
   const activeAssignment = gradeAssignments[0];
 
-  const gradeSessions = sessions.filter((s) => isContentVisibleToStudent(s, currentStudent.grade));
+  const gradeSessions = sessions.filter((s) => isContentVisibleToStudent(s, currentStudent.grade, currentStudent.id));
   const activeSession = gradeSessions[0];
 
   return (

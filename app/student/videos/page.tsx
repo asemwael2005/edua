@@ -16,8 +16,8 @@ export default function StudentVideosPage() {
   const currentStudent = activeStudent || students[0];
   if (!currentStudent) return null;
 
-  // Display videos strictly matching current student's grade level and published status
-  const displayedVideos = videos.filter((vid) => isContentVisibleToStudent(vid, currentStudent.grade));
+  // Display videos strictly matching current student's grade level, published status, and student whitelist
+  const displayedVideos = videos.filter((vid) => isContentVisibleToStudent(vid, currentStudent.grade, currentStudent.id));
 
   return (
     <BanShield student={currentStudent}>

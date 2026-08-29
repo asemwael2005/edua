@@ -20,6 +20,7 @@ import {
   BookOpen,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { isContentVisibleToStudent } from '@/lib/gradeUtils';
 import Link from 'next/link';
 
 export default function InteractiveQuizPlayerPage() {
@@ -32,11 +33,8 @@ export default function InteractiveQuizPlayerPage() {
   const rawQuizId = (params?.id as string) || 'quiz_1';
   const cleanQuizId = rawQuizId.split('/')[0];
 
-  const gradeQuizzes = currentStudent ? quizzes.filter((q) => isMatchingGrade(q.grade, currentStudent.grade)) : quizzes;
-  const targetQuiz =
-    quizzes.find((q) => q.id === rawQuizId || q.id === cleanQuizId) ||
-    gradeQuizzes[0] ||
-    quizzes[0];
+  const visibleQuizzes = currentStudent ? quizzes.filter((q) => isContentVisibleToStudent(q, currentStudent.grade, currentStudent.id)) : quizzes;
+  const targetQuiz = visibleQuizzes.find((q) => q.id === rawQuizId || q.id === cleanQuizId) || visibleQuizzes[0];
 
   // Check if student already submitted this quiz before
   const existingSubmission = quizSubmissions.find(
