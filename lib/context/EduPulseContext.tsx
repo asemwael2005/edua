@@ -748,6 +748,7 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const updated = [newSub, ...quizSubmissions];
     setQuizSubmissions(updated);
     saveState('quiz_subs', updated);
+    syncDB('create', 'quizSubmissions', newSub);
 
     // Reward points for total score
     adjustGrade(
@@ -803,12 +804,15 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     );
 
     let updated: AssignmentSubmission[];
+    let targetSub: AssignmentSubmission;
     if (existingIndex >= 0) {
+      targetSub = { ...assignmentSubmissions[existingIndex], content, submittedAt: new Date().toISOString(), status: 'submitted' as const };
       updated = assignmentSubmissions.map((s, idx) =>
-        idx === existingIndex ? { ...s, content, submittedAt: new Date().toISOString(), status: 'submitted' as const } : s
+        idx === existingIndex ? targetSub : s
       );
+      syncDB('update', 'assignmentSubmissions', targetSub);
     } else {
-      const newSub: AssignmentSubmission = {
+      targetSub = {
         id: `asgn_sub_${Date.now()}`,
         assignmentId,
         studentId,
@@ -816,7 +820,8 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         submittedAt: new Date().toISOString(),
         status: 'submitted',
       };
-      updated = [newSub, ...assignmentSubmissions];
+      updated = [targetSub, ...assignmentSubmissions];
+      syncDB('create', 'assignmentSubmissions', targetSub);
     }
 
     setAssignmentSubmissions(updated);

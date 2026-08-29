@@ -670,30 +670,39 @@ export default function QuizzesAdminPage() {
 
               {/* Submissions List */}
               <div className="space-y-3">
-                {quizSubmissions
-                  .filter((s) => s.quizId === analyticsQuiz.id)
-                  .map((sub) => {
-                    const st = students.find((s) => s.id === sub.studentId);
+                {quizSubmissions.filter((s) => s.quizId === analyticsQuiz.id).length === 0 ? (
+                  <div className="p-8 text-center rounded-2xl bg-slate-950 border border-slate-800 space-y-2">
+                    <FileCheck2 className="w-8 h-8 text-slate-600 mx-auto" />
+                    <p className="text-xs text-slate-400 font-bold">لا توجد تسليمات مسجلة لهذا الاختبار حتى الآن 📋</p>
+                  </div>
+                ) : (
+                  quizSubmissions
+                    .filter((s) => s.quizId === analyticsQuiz.id)
+                    .map((sub) => {
+                      const st = students.find((s) => s.id === sub.studentId);
+                      const studentName = st?.name || 'طالب مسجل';
+                      const studentAvatar = st?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=250';
 
-                    return (
-                      <div key={sub.id} className="p-4 rounded-2xl bg-slate-950 border border-slate-800 flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <img src={st?.avatar} alt={st?.name} className="w-10 h-10 rounded-xl object-cover" />
-                          <div>
-                            <h4 className="text-xs font-bold text-white">{st?.name}</h4>
-                            <span className="text-[10px] text-slate-400 font-mono">
-                              الوقت المستغرق: {Math.round(sub.timeSpentSeconds / 60)} دقيقة
-                            </span>
+                      return (
+                        <div key={sub.id} className="p-4 rounded-2xl bg-slate-950 border border-slate-800 flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <img src={studentAvatar} alt={studentName} className="w-10 h-10 rounded-xl object-cover" />
+                            <div>
+                              <h4 className="text-xs font-bold text-white">{studentName}</h4>
+                              <span className="text-[10px] text-slate-400 font-mono">
+                                الوقت المستغرق: {Math.round(sub.timeSpentSeconds / 60) || 1} دقيقة
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="text-right font-mono">
+                            <span className="block text-sm font-black text-amber-400">{sub.totalScore} / {sub.maxScore}</span>
+                            <span className="text-[10px] text-emerald-400 font-bold">{sub.percentage}%</span>
                           </div>
                         </div>
-
-                        <div className="text-right font-mono">
-                          <span className="block text-sm font-black text-amber-400">{sub.totalScore} / {sub.maxScore}</span>
-                          <span className="text-[10px] text-emerald-400 font-bold">{sub.percentage}%</span>
-                        </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })
+                )}
               </div>
             </motion.div>
           </div>
