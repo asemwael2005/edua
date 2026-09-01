@@ -23,6 +23,7 @@ import {
   AlertCircle,
   PauseCircle,
   PlayCircle,
+  Unlock,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -39,6 +40,9 @@ export default function StudentsManagementPage() {
     liftBan,
     adjustGrade,
     showToast,
+    quizzes,
+    quizSubmissions,
+    resetQuizSubmission,
   } = useEduPulse();
 
   // Filters & Search
@@ -973,6 +977,44 @@ export default function StudentsManagementPage() {
                 <button type="button" onClick={() => setProfileStudent(null)} className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700">
                   <X className="w-5 h-5" />
                 </button>
+              </div>
+
+              {/* Quiz Submissions & Re-Attempt Reset Section */}
+              <div className="space-y-3 pt-4 border-t border-slate-800">
+                <h4 className="text-sm font-bold text-slate-200 flex items-center justify-between">
+                  <span>سجل امتحانات الطالب ({quizSubmissions.filter((s) => s.studentId === profileStudent.id).length}) 📝</span>
+                </h4>
+
+                <div className="space-y-2">
+                  {quizSubmissions.filter((s) => s.studentId === profileStudent.id).length === 0 ? (
+                    <p className="text-xs text-slate-500 italic p-3 rounded-xl bg-slate-950">لم يحل هذا الطالب أي امتحانات بعد.</p>
+                  ) : (
+                    quizSubmissions
+                      .filter((s) => s.studentId === profileStudent.id)
+                      .map((sub) => {
+                        const quiz = quizzes.find((q) => q.id === sub.quizId);
+                        return (
+                          <div key={sub.id} className="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between text-xs">
+                            <div>
+                              <h5 className="font-extrabold text-white">{quiz?.title || 'اختبار إلكتروني'}</h5>
+                              <span className="text-[10px] text-slate-400 font-mono">
+                                النتيجة: {sub.totalScore}/{sub.maxScore} ({sub.percentage}%)
+                              </span>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => resetQuizSubmission(sub.quizId, profileStudent.id)}
+                              className="px-3 py-1.5 rounded-xl bg-purple-950 hover:bg-purple-900 border border-purple-500/40 text-purple-200 font-bold flex items-center gap-1 transition shrink-0"
+                            >
+                              <Unlock className="w-3.5 h-3.5 text-purple-400" />
+                              <span>إعادة فتح المحاولة 🔓</span>
+                            </button>
+                          </div>
+                        );
+                      })
+                  )}
+                </div>
               </div>
             </motion.div>
           </div>
