@@ -62,8 +62,7 @@ export const Sidebar: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ is
     setUserRole('student');
     showToast('تم تسجيل الخروج بنجاح 🚪');
     onClose();
-    router.replace('/login');
-    router.refresh();
+    window.location.href = '/login';
   };
 
   const sidebarContent = (

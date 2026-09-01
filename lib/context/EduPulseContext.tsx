@@ -253,7 +253,6 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
               prevLocal.forEach((s: Student) => {
                 if (!mergedMap.has(s.id)) {
                   mergedMap.set(s.id, s);
-                  syncDB('create', 'students', s);
                 } else {
                   const existing = mergedMap.get(s.id)!;
                   mergedMap.set(s.id, { ...existing, ...s });
@@ -271,7 +270,6 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
               prevLocal.forEach((s: Session) => {
                 if (!mergedMap.has(s.id)) {
                   mergedMap.set(s.id, s);
-                  syncDB('create', 'sessions', s);
                 }
               });
               const final = Array.from(mergedMap.values());
@@ -286,7 +284,6 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
               prevLocal.forEach((q: Quiz) => {
                 if (!mergedMap.has(q.id)) {
                   mergedMap.set(q.id, q);
-                  syncDB('create', 'quizzes', q);
                 }
               });
               const final = Array.from(mergedMap.values());
@@ -301,7 +298,6 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
               prevLocal.forEach((a: Assignment) => {
                 if (!mergedMap.has(a.id)) {
                   mergedMap.set(a.id, a);
-                  syncDB('create', 'assignments', a);
                 }
               });
               const final = Array.from(mergedMap.values());
@@ -318,7 +314,6 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
               prevLocal.forEach((v: RecordedVideo) => {
                 if (!mergedMap.has(v.id)) {
                   mergedMap.set(v.id, v);
-                  syncDB('create', 'videos', v);
                 }
               });
               const finalVideos = Array.from(mergedMap.values());
@@ -333,7 +328,6 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
               prevLocal.forEach((qs: QuizSubmission) => {
                 if (!mergedMap.has(qs.id)) {
                   mergedMap.set(qs.id, qs);
-                  syncDB('create', 'quizSubmissions', qs);
                 }
               });
               const final = Array.from(mergedMap.values());
@@ -348,7 +342,6 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
               prevLocal.forEach((as: AssignmentSubmission) => {
                 if (!mergedMap.has(as.id)) {
                   mergedMap.set(as.id, as);
-                  syncDB('create', 'assignmentSubmissions', as);
                 }
               });
               const final = Array.from(mergedMap.values());

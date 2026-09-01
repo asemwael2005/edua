@@ -45,22 +45,7 @@ function LoginFormContent() {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Check if already authenticated on mount
-  useEffect(() => {
-    fetch('/api/auth/me')
-      .then((res) => res.json())
-      .then((data) => {
-        if (data && data.authenticated && data.user) {
-          const dest = redirectParam && redirectParam.startsWith('/')
-            ? decodeURIComponent(redirectParam)
-            : data.user.role === 'admin'
-            ? '/admin'
-            : '/student';
-          window.location.href = dest;
-        }
-      })
-      .catch(() => {});
-  }, [redirectParam, router]);
+
 
   // Handle Login
   const handleLogin = async (e: React.FormEvent) => {
