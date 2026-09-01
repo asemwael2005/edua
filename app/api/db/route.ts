@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { readDatabase, writeDatabase, DatabaseSchema } from '@/lib/db';
+import { isMatchingGrade } from '@/lib/gradeUtils';
 
 export async function GET() {
   try {
@@ -77,6 +78,19 @@ export async function POST(req: Request) {
         (s) => !(s.quizId === body.quizId && s.studentId === body.studentId)
       );
       writeDatabase(db);
+      return NextResponse.json({ success: true, db });
+    }
+
+    if (action === 'openSingleQuizOnly' && body.quizId) {
+      const target = db.quizzes.find((q) => q.id === body.quizId);
+      if (target) {
+        db.quizzes = db.quizzes.map((q) => {
+          if (q.id === body.quizId) return { ...q, isOpen: true };
+          if (isMatchingGrade(q.grade, target.grade)) return { ...q, isOpen: false };
+          return q;
+        });
+        writeDatabase(db);
+      }
       return NextResponse.json({ success: true, db });
     }
 

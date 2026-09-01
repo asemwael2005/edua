@@ -18,6 +18,7 @@ import {
   AdminUser,
   ActiveLiveStream,
 } from '@/types/edupulse';
+import { isMatchingGrade } from '@/lib/gradeUtils';
 import {
   initialStudents,
   initialSessions,
@@ -89,6 +90,7 @@ interface EduPulseContextType {
   createQuiz: (quiz: Omit<Quiz, 'id'>) => void;
   updateQuiz: (quiz: Quiz) => void;
   toggleQuizStatus: (quizId: string) => void;
+  openSingleQuizOnly: (quizId: string) => void;
   deleteQuiz: (quizId: string) => void;
   submitQuiz: (submission: Omit<QuizSubmission, 'id' | 'submittedAt'>) => void;
   resetQuizSubmission: (quizId: string, studentId: string) => void;
@@ -727,6 +729,39 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     );
   };
 
+  const openSingleQuizOnly = (quizId: string) => {
+    const targetQuiz = quizzes.find((q) => q.id === quizId);
+    if (!targetQuiz) return;
+
+    const updated = quizzes.map((q) => {
+      if (q.id === quizId) {
+        return { ...q, isOpen: true };
+      }
+      if (isMatchingGrade(q.grade, targetQuiz.grade)) {
+        return { ...q, isOpen: false };
+      }
+      return q;
+    });
+
+    setQuizzes(updated);
+    saveState('quizzes', updated);
+
+    fetch('/api/db', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'openSingleQuizOnly',
+        quizId,
+      }),
+    }).catch((e) => console.warn('Sync openSingleQuizOnly warning:', e));
+
+    showToast(
+      language === 'ar'
+        ? `تم فتح اختبار (${targetQuiz.title}) فقط، وإغلاق بقية امتحانات هذه المرحلة 🎯`
+        : `Only quiz (${targetQuiz.title}) is now open for this grade`
+    );
+  };
+
   const deleteQuiz = (quizId: string) => {
     const updatedQuizzes = quizzes.filter((q) => q.id !== quizId);
     const updatedSubmissions = quizSubmissions.filter((s) => s.quizId !== quizId);
@@ -1105,6 +1140,7 @@ export const EduPulseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         createQuiz,
         updateQuiz,
         toggleQuizStatus,
+        openSingleQuizOnly,
         deleteQuiz,
         submitQuiz,
         resetQuizSubmission,

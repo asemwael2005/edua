@@ -25,7 +25,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function QuizzesAdminPage() {
-  const { dict, quizzes, createQuiz, updateQuiz, toggleQuizStatus, deleteQuiz, quizSubmissions, students, resetQuizSubmission } = useEduPulse();
+  const { dict, quizzes, createQuiz, updateQuiz, toggleQuizStatus, openSingleQuizOnly, deleteQuiz, quizSubmissions, students, resetQuizSubmission } = useEduPulse();
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingQuiz, setEditingQuiz] = useState<Quiz | null>(null);
@@ -37,6 +37,7 @@ export default function QuizzesAdminPage() {
   const [quizSubject, setQuizSubject] = useState('الرياضيات');
   const [quizGrade, setQuizGrade] = useState('الصف الأول الثانوي (Grade 10)');
   const [quizIsPublished, setQuizIsPublished] = useState(true);
+  const [quizIsOpen, setQuizIsOpen] = useState(true);
   const [quizDuration, setQuizDuration] = useState(15);
   const [accessScope, setAccessScope] = useState<'all' | 'specific'>('all');
   const [allowedStudentIds, setAllowedStudentIds] = useState<string[]>([]);
@@ -51,6 +52,7 @@ export default function QuizzesAdminPage() {
     setQuizSubject(quiz.subject);
     setQuizGrade(quiz.grade);
     setQuizIsPublished(quiz.isPublished !== false);
+    setQuizIsOpen(quiz.isOpen !== false);
     setQuizDuration(quiz.durationMinutes);
     setQuestions(quiz.questions || []);
     if (quiz.allowedStudentIds && quiz.allowedStudentIds.length > 0) {
@@ -107,7 +109,7 @@ export default function QuizzesAdminPage() {
       durationMinutes: quizDuration,
       scheduledStart: new Date(quizStart).toISOString(),
       scheduledEnd: new Date(quizEnd).toISOString(),
-      isOpen: editingQuiz ? editingQuiz.isOpen : true,
+      isOpen: quizIsOpen,
       questions,
       isPublished: quizIsPublished,
       allowedStudentIds: accessScope === 'specific' ? allowedStudentIds : [],
@@ -180,6 +182,19 @@ export default function QuizzesAdminPage() {
                   </span>
 
                   <div className="flex items-center gap-2 shrink-0">
+                    {/* Open ONLY this Quiz button */}
+                    {!quiz.isOpen && (
+                      <button
+                        type="button"
+                        onClick={() => openSingleQuizOnly(quiz.id)}
+                        className="px-2.5 py-1.5 rounded-xl bg-indigo-950/80 hover:bg-indigo-900 border border-indigo-500/40 text-indigo-200 text-xs font-bold transition flex items-center gap-1"
+                        title="فتح هذا الاختبار فقط وتأكيد إغلاق كافة الاختبارات الأخرى لهذه المرحلة"
+                      >
+                        <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+                        <span>فتح هذا فقط 🎯</span>
+                      </button>
+                    )}
+
                     {/* Open / Close Manual Toggle */}
                     <button
                       type="button"
@@ -407,6 +422,34 @@ export default function QuizzesAdminPage() {
                       }`}
                     >
                       <span>مخفي (مسودة للإدارة فقط) 🔒</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-1 p-3 rounded-2xl bg-slate-950 border border-slate-800">
+                  <label className="text-slate-300 font-bold block">حالة فتح التقديم والحل للطلاب 🔓</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setQuizIsOpen(true)}
+                      className={`p-2.5 rounded-xl border text-xs font-extrabold flex items-center justify-center gap-2 transition ${
+                        quizIsOpen
+                          ? 'bg-emerald-600 text-white border-emerald-500 shadow-md shadow-emerald-500/20'
+                          : 'bg-slate-900 text-slate-400 border-slate-800'
+                      }`}
+                    >
+                      <span>مفتوح للتقديم والحل 🟢</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setQuizIsOpen(false)}
+                      className={`p-2.5 rounded-xl border text-xs font-extrabold flex items-center justify-center gap-2 transition ${
+                        !quizIsOpen
+                          ? 'bg-rose-600 text-white border-rose-500 shadow-md shadow-rose-500/20'
+                          : 'bg-slate-900 text-slate-400 border-slate-800'
+                      }`}
+                    >
+                      <span>مغلق للتقديم حالياً 🔴</span>
                     </button>
                   </div>
                 </div>
